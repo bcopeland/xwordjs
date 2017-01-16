@@ -4,14 +4,12 @@ import './App.css';
 //
 // TODO:
 //  . usability
-//   . select clue w/ mouse
 //  . styling
 //   . clue resize to grid height
 //   . clues left
 //   . letters centered
 //   . number grid
 //  . polish
-//   . don't go to next letter if clue is full
 //   . shift-tab focus last letter
 //   . start with a puz from somewhere or D&D target
 //   . scrollIntoViewIfNeeded(centered) - polyfill
@@ -126,26 +124,6 @@ function Clues(props) {
 }
 
 class Grid extends Component {
-  handleClick(i) {
-  /*
-    const cells = this.state.cells.slice();
-    if (cells[i] === '#') {
-      cells[i] = ".";
-    } else {
-      cells[i] = "#";
-      console.log("set i to #");
-    }
-    // apply symmetry
-    var y = Math.floor(i / this.state.width);
-    var x = i % this.state.width;
-    [x, y] = [this.state.width - x - 1, this.state.height - y - 1];
-    var sym_i = x + this.state.width * y;
-    cells[sym_i] = cells[i];
-
-    console.log("XXX updating cells: " + cells);
-    this.setState({'cells': cells});
-  */
-  }
   render() {
     var rows = [];
     for (var i=0; i < this.props.height; i++) {
@@ -163,7 +141,7 @@ class Grid extends Component {
         }
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
-         onClick={(x)=>this.handleClick(x)}/>;
+         onClick={(x)=>this.props.handleClick(x.substring(5))}/>;
         row_cells.push(cell);
       }
       rows[i] = <div className="xwordjs-grid-row" key={"row_" + i}>{row_cells}</div>;
@@ -179,7 +157,6 @@ class Grid extends Component {
 function Cell(props) {
   var classname="xwordjs-cell";
   if (props.isBlack) {
-    console.log(props.value + " is " + props.isBlack);
     classname += " xwordjs-cell-black";
   }
   if (props.isFocus) {
@@ -441,6 +418,9 @@ class App extends Component {
       default:
     }
   }
+  handleClick(i) {
+    this.selectCell(i, this.state.direction);
+  }
   puzzleLoaded(puz) {
     var grid = puz.grid;
     var maxx = grid[0].length;
@@ -590,11 +570,12 @@ class App extends Component {
     window.removeEventListener("keydown", (e) => self.handleKeyDown(e));
   }
   render() {
+    var self = this;
     return (
       <div className="App">
         <div className="xwordjs-container">
           <div className="xwordjs-grid">
-            <Grid height={this.state.height} width={this.state.width} cells={this.state.cells}/>
+            <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
           </div>
           <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
         </div>
