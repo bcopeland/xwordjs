@@ -1,0 +1,76 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.xwordjs-container {
+  display: flex;
+}
+
+.xwordjs-grid {
+  flex-flow: row wrap;
+  display: inline;
+}
+
+.xwordjs-grid-row {
+  display: flex;
+}
+
+.xwordjs-cell {
+  border-style: solid;
+  width: 40px;
+  height: 40px;
+}
+
+.xwordjs-cell-black {
+  background-color: #707070;
+}
+
+.xwordjs-cell-active {
+  background-color: #00ff00;
+}
+
+.xwordjs-cell-focus {
+  background-color: #a0ffa0;
+}
+
+.xwordjs-cluelist-container {
+  display: flex;
+  width: 300px;
+}
+
+.xwordjs-cluelist {
+  height: 400px;
+  width: 150px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.xwordjs-clue-active {
+  background-color: #00ff00
+}
+
+.xwordjs-clue-cross-active {
+  background-color: #008000
+}
+
