@@ -4,23 +4,24 @@ import './App.css';
 //
 // TODO:
 //  . usability
-//   . start with a puz from somewhere
-//   . clue scroll to visible
+//   . select clue w/ mouse
 //  . styling
 //   . clue resize to grid height
 //   . clues left
 //   . letters centered
 //   . number grid
-//  . softkey entry
-//  . select clue w/ mouse
 //  . polish
+//   . don't go to next letter if clue is full
 //   . shift-tab focus last letter
-//  . recognize completion
+//   . start with a puz from somewhere or D&D target
+//   . scrollIntoViewIfNeeded(centered) - polyfill
 //  . reveal letter
 //  . reveal clue
 //  . show errors
-//  . mini-clue entry
 //  . phone interface
+//   . softkey entry
+//   . mini-clue entry
+//   . clue only entry
 //  . puz file loader
 //  . restyle input selection
 //  . timer
@@ -59,6 +60,7 @@ class XwordCell {
   constructor(options) {
     this.state = {
       'fill': '.',
+      'entry': ' ',
       'active': false,
       'focus': false,
     };
@@ -83,7 +85,7 @@ function Clue(props) {
     extraClass = " xwordjs-clue-cross-active";
 
   return (
-    <div className={"xwordjs-clue" + extraClass} onClick={() => props.onClick(clue)}>{contents}</div>
+    <div className={"xwordjs-clue" + extraClass} id={"clue_" + clue.get('index')} onClick={() => props.onClick(clue)}>{contents}</div>
   );
 }
 
@@ -151,6 +153,7 @@ class Grid extends Component {
       for (var j=0; j < this.props.width; j++) {
         var ind = i * this.props.width + j;
         var fill = this.props.cells[ind].get('fill');
+        var entry = this.props.cells[ind].get('entry');
         var active = this.props.cells[ind].get('active');
         var focus = this.props.cells[ind].get('focus');
         var black = fill === '#';
@@ -158,7 +161,7 @@ class Grid extends Component {
         if (fill === '#' || fill === '.') {
           fill = ' ';
         }
-        var cell = <Cell id={ind} value={fill} key={"cell_" + ind}
+        var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
          onClick={(x)=>this.handleClick(x)}/>;
         row_cells.push(cell);
@@ -326,7 +329,7 @@ class App extends Component {
         y = start_y;
 
       var cell = this.state.cells[y * this.state.width + x];
-      if (cell.get('fill') === ' ')
+      if (cell.get('entry') === ' ')
         break;
     }
     if (i === alen) {
@@ -365,19 +368,33 @@ class App extends Component {
   type(ch) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'fill': ch});
+    cell.setState({'entry': ch});
+    if (this.isCorrect()) {
+      alert("you did it!");
+    }
     this.navNext();
   }
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'fill': ' '});
+    cell.setState({'entry': ' '});
     this.selectCell(this.state.activecell, this.state.direction);
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'fill': ' '});
+    cell.setState({'entry': ' '});
     this.navPrev();
+  }
+  isCorrect() {
+    for (var i=0; i < this.state.cells.length; i++) {
+      var cell = this.state.cells[i];
+      var fill = cell.get('fill');
+      var entry = cell.get('entry');
+
+      if (fill !== '#' && entry !== fill)
+        return false;
+    }
+    return true;
   }
   handleKeyDown(e) {
     if (this.state.direction === 'A' && (e.keyCode == 0x26 || e.keyCode == 0x28)) {
@@ -434,7 +451,7 @@ class App extends Component {
 
     for (var x=0; x < maxx; x++) {
       for (var y=0; y < maxy; y++) {
-        var fill = (grid[y][x] === '#') ? '#' : ' ';
+        var fill = grid[y][x];
         cells[y * maxx + x] = new XwordCell({
           'fill': fill,
           'active': false
@@ -546,9 +563,12 @@ class App extends Component {
     if (clue) {
       clue.setState({"active": true, "crossActive": false});
       this.highlightClue(clue, true);
+      document.getElementById("clue_" + clue.get('index')).scrollIntoView();
     }
-    if (cross)
+    if (cross) {
       cross.setState({"active": false, "crossActive": true});
+      document.getElementById("clue_" + cross.get('index')).scrollIntoView();
+    }
 
     cell.setState({"focus": true});
     this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction});
