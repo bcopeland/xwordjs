@@ -42,6 +42,18 @@
   height: 40px;
 }
 
+.xwordjs-cell-number {
+  height: 3px;
+  text-align: left;
+  font-size: 0.7em;
+}
+
+.xwordjs-cell-text {
+  text-align: center;
+  line-height: 40px;
+  vertical-align: middle;
+}
+
 .xwordjs-cell-black {
   background-color: #707070;
 }
@@ -60,10 +72,11 @@
 }
 
 .xwordjs-cluelist {
-  height: 400px;
-  width: 150px;
+  height: 600px;
+  width: 300px;
   overflow-y: scroll;
   overflow-x: hidden;
+  text-align: left;
 }
 
 .xwordjs-clue-active {

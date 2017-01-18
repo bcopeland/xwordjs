@@ -5,11 +5,8 @@ import './App.css';
 // TODO:
 //  . usability
 //  . styling
-//   . clue resize to grid height
-//   . clues left
-//   . letters centered
-//   . number grid
 //  . polish
+//   . clue resize to grid height
 //   . shift-tab focus last letter
 //   . start with a puz from somewhere or D&D target
 //   . scrollIntoViewIfNeeded(centered) - polyfill
@@ -61,6 +58,7 @@ class XwordCell {
       'entry': ' ',
       'active': false,
       'focus': false,
+      'number': null,
     };
     Object.assign(this.state, options);
   }
@@ -134,6 +132,7 @@ class Grid extends Component {
         var entry = this.props.cells[ind].get('entry');
         var active = this.props.cells[ind].get('active');
         var focus = this.props.cells[ind].get('focus');
+        var number = this.props.cells[ind].get('number') || '';
         var black = fill === '#';
 
         if (fill === '#' || fill === '.') {
@@ -141,6 +140,7 @@ class Grid extends Component {
         }
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
+         number={number}
          onClick={(x)=>this.props.handleClick(x.substring(5))}/>;
         row_cells.push(cell);
       }
@@ -164,7 +164,10 @@ function Cell(props) {
   } else if (props.isActive) {
     classname += " xwordjs-cell-active";
   }
-  return <div className={classname} onClick={() => props.onClick(props.id)}>{props.value}</div>;
+  return <div className={classname} onClick={() => props.onClick(props.id)}>
+          <div className="xwordjs-cell-number">{props.number}</div>
+          <div className="xwordjs-cell-text">{props.value}</div>
+          </div>;
 }
 
 class FileInput extends Component {
@@ -429,32 +432,29 @@ class App extends Component {
     var cells = Array(maxx * maxy).fill(null);
     var cell_to_clue_table = Array(maxx * maxy).fill(null);
 
-    for (var x=0; x < maxx; x++) {
-      for (var y=0; y < maxy; y++) {
-        var fill = grid[y][x];
-        cells[y * maxx + x] = new XwordCell({
-          'fill': fill,
-          'active': false
-        });
-        cell_to_clue_table[y * maxx + x] = [null, null];
-      }
-    }
-
     var number_index = [];
     for (var y = 0; y < maxy; y++) {
       for (var x = 0; x < maxx; x++) {
-        if (grid[y][x] === '#') {
-          continue;
-        }
-
-        var start_of_xslot = ((x === 0 || grid[y][x-1] === '#') &&
+        var fill = grid[y][x];
+        var is_black = fill === '#';
+        var number = null;
+        var start_of_xslot = (!is_black &&
+                              (x === 0 || grid[y][x-1] === '#') &&
                               (x + 1 < maxx && grid[y][x+1] !== '#'));
-        var start_of_yslot = ((y === 0 || grid[y-1][x] === '#') &&
+        var start_of_yslot = (!is_black &&
+                              (y === 0 || grid[y-1][x] === '#') &&
                               (y + 1 < maxy && grid[y+1][x] !== '#'));
 
         if (start_of_xslot || start_of_yslot) {
           number_index.push([x,y]);
+          number = number_index.length;
         }
+        cells[y * maxx + x] = new XwordCell({
+          'fill': fill,
+          'number': number,
+          'active': false
+        });
+        cell_to_clue_table[y * maxx + x] = [null, null];
       }
     }
 
