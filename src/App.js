@@ -8,7 +8,6 @@ import './App.css';
 //  . polish
 //   . clue resize to grid height
 //   . shift-tab focus last letter
-//   . start with a puz from somewhere or D&D target
 //   . scrollIntoViewIfNeeded(centered) - polyfill
 //  . reveal letter
 //  . reveal clue
@@ -208,6 +207,18 @@ class App extends Component {
     for (var i = 0; i < this.state.width * this.state.height; i++) {
       this.state.cells.push(new XwordCell({'fill': '.'}));
     }
+    this.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
+  }
+  loadPuzzle(url) {
+    var self = this;
+    var request = new Request(url);
+    fetch(request).then(function(response) {
+      return response.text();
+    }).then(function(data) {
+      console.log(data);
+      var puz = new Xd(data);
+      self.puzzleLoaded(puz);
+    });
   }
   cellPos(clue_id) {
     var y = Math.floor(clue_id / this.state.width);
