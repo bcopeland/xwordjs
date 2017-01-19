@@ -87,3 +87,7 @@
   background-color: #008000
 }
 
+.xwordjs-timer {
+  display: flex;
+  margin-right: 20px;
+}

@@ -120,6 +120,59 @@ function Clues(props) {
   );
 }
 
+class Timer extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { start_time: new Date().getTime(), elapsed: 0, paused: false };
+    this.onInterval = this.onInterval.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+  }
+  onInterval() {
+    var now = new Date().getTime();
+    var elapsed = this.state.elapsed + now - this.state.start_time;
+    this.setState({start_time: now, elapsed: elapsed});
+  }
+  handleClick(e) {
+    e.preventDefault();
+    if (this.state.paused) {
+      this.start();
+    } else {
+      this.pause();
+    }
+  }
+  reset() {
+    this.setState({start_time: new Date().getTime(), elapsed: 0});
+  }
+  start() {
+    var timer = setInterval(this.onInterval, 1000);
+    this.setState({start_time: new Date().getTime(), timer: timer, paused: false});
+  }
+  pause() {
+    clearInterval(this.state.timer);
+    this.setState({paused: true});
+  }
+  render() {
+    var elapsed = this.state.elapsed / 1000;
+    var sec = Math.floor(elapsed % 60);
+    var min = Math.floor(elapsed / 60);
+
+    var sec = (sec < 10) ? "0" + sec : sec;
+    var min = (min < 10) ? "0" + min : min;
+
+    var time_text = min + ":" + sec;
+    return (
+      <div className="xwordjs-timer"><span>{time_text}</span><div className="xwordjs-timer-pause" onClick={this.handleClick}><b>&#8545;</b></div></div>
+    );
+  }
+  componentDidMount() {
+    this.reset();
+    this.start();
+  }
+  componentDidUnmount() {
+    this.pause();
+  }
+}
+
 class Grid extends Component {
   render() {
     var rows = [];
@@ -551,14 +604,14 @@ class App extends Component {
     var clue = this.state.clues[this.state.cell_to_clue_table[cell_id][dind]];
     var cross = this.state.clues[this.state.cell_to_clue_table[cell_id][1 - dind]];
 
-    if (clue) {
-      clue.setState({"active": true, "crossActive": false});
-      this.highlightClue(clue, true);
-      document.getElementById("clue_" + clue.get('index')).scrollIntoView();
-    }
     if (cross) {
       cross.setState({"active": false, "crossActive": true});
       document.getElementById("clue_" + cross.get('index')).scrollIntoView();
+    }
+    if (clue) {
+      clue.setState({"active": true, "crossActive": false});
+      document.getElementById("clue_" + clue.get('index')).scrollIntoView();
+      this.highlightClue(clue, true);
     }
 
     cell.setState({"focus": true});
@@ -584,6 +637,9 @@ class App extends Component {
     var self = this;
     return (
       <div className="App">
+        <div className="xwordjs-topbar">
+          <Timer/>
+        </div>
         <div className="xwordjs-container">
           <div className="xwordjs-grid">
             <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
