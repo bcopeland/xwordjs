@@ -5,10 +5,16 @@ import './App.css';
 // TODO:
 //  . usability
 //  . styling
+//   . timer centered
+//   . pause 'button'
+//   . title
+//   . color of alt clue
 //  . polish
+//   . no click on black squares
 //   . clue resize to grid height
 //   . shift-tab focus last letter
 //   . scrollIntoViewIfNeeded(centered) - polyfill
+//   . scroll sideways annoying
 //  . reveal letter
 //  . reveal clue
 //  . show errors
@@ -18,8 +24,7 @@ import './App.css';
 //   . clue only entry
 //  . puz file loader
 //  . restyle input selection
-//  . timer
-//  . pause timer + blur
+//  . blur overlay on timer pause
 //  . save history (local storage)
 //  . solve stats (by day)
 //  . creation app using same components as solver app
@@ -66,6 +71,9 @@ class XwordCell {
   }
   get(key) {
     return this.state[key];
+  }
+  isBlack() {
+    return this.state.fill === '#';
   }
 }
 
@@ -409,6 +417,10 @@ class App extends Component {
     var activecell = y * this.state.width + x;
     this.selectCell(activecell, this.state.direction);
   }
+  switchDir() {
+    var dir = this.state.direction === 'A' ? 'D' : 'A';
+    this.selectCell(this.state.activecell, dir);
+  }
   type(ch) {
     var cell = this.state.cells[this.state.activecell];
 
@@ -462,11 +474,9 @@ class App extends Component {
       case 0x8:
         e.preventDefault();
         return this.backspace();
-      case 0x9:
+      case 0x20:
         e.preventDefault();
-        if (e.shiftKey)
-          return this.navPrevClue();
-        return this.navNextClue();
+        return this.switchDir();
       case 0x25:
         e.preventDefault();
         return this.navLeft();
@@ -486,7 +496,11 @@ class App extends Component {
     }
   }
   handleClick(i) {
-    this.selectCell(i, this.state.direction);
+    if (this.state.activecell === i) {
+      this.switchDir();
+    } else {
+      this.selectCell(i, this.state.direction);
+    }
   }
   puzzleLoaded(puz) {
     var grid = puz.grid;
@@ -576,6 +590,11 @@ class App extends Component {
   }
   selectCell(cell_id, direction)
   {
+    var cell = this.state.cells[cell_id];
+
+    if (cell.isBlack())
+      return;
+
     var newclues = this.state.clues.slice();
     var newcells = this.state.cells.slice();
 
@@ -600,7 +619,6 @@ class App extends Component {
     oldcell.setState({"active": false});
 
     // select new cell and crosses
-    var cell = this.state.cells[cell_id];
     var clue = this.state.clues[this.state.cell_to_clue_table[cell_id][dind]];
     var cross = this.state.clues[this.state.cell_to_clue_table[cell_id][1 - dind]];
 
