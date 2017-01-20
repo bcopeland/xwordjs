@@ -84,10 +84,29 @@
 }
 
 .xwordjs-clue-cross-active {
-  background-color: #008000
+  background-color: #7fb77f
 }
 
 .xwordjs-timer {
   display: flex;
   margin-right: 20px;
+}
+
+.xwordjs-keyboard-key {
+  height: 40px;
+  width: 40px;
+  line-height: 40px;
+  background-color: #7fb77f;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.xwordjs-keyboard-row {
+  display: flex;
+  justify-content: center;
+}
+
+.xwordjs-keyboard {
+  display: flex;
+  flex-direction: column;
 }

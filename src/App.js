@@ -176,7 +176,7 @@ class Timer extends Component {
     this.reset();
     this.start();
   }
-  componentDidUnmount() {
+  componentWillUnmount() {
     this.pause();
   }
 }
@@ -212,6 +212,36 @@ class Grid extends Component {
       </div>
     );
   }
+}
+
+function MobileKeyboardKey(props) {
+  return <div className="xwordjs-keyboard-key" onClick={() => props.onClick(props.code)}>{props.value}</div>;
+}
+
+function MobileKeyboard(props) {
+  var keys = ["qwertyuiop", "asdfghjkl", "␣zxcvbnm⌫"];
+  var rows = [];
+  for (var i=0; i < keys.length; i++) {
+    var rowstr = keys[i];
+    var row_keys = [];
+    for (var j=0; j < rowstr.length; j++) {
+      var ch = rowstr.charAt(j);
+      var code;
+      if (ch == '␣') {
+        code = 0x20;
+      } else if (ch == '⌫') {
+        code = 0x8;
+      } else {
+        code = ch.charCodeAt(0);
+      }
+      var key = <MobileKeyboardKey key={ch} onClick={props.onClick} code={code} value={ch}/>;
+      row_keys.push(key);
+    }
+    rows[i] = <div className="xwordjs-keyboard-row" key={i}>{row_keys}</div>;
+  }
+  return (
+    <div className="xwordjs-keyboard">{rows}</div>
+  );
 }
 
 function Cell(props) {
@@ -268,7 +298,6 @@ class App extends Component {
     for (var i = 0; i < this.state.width * this.state.height; i++) {
       this.state.cells.push(new XwordCell({'fill': '.'}));
     }
-    this.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
   }
   loadPuzzle(url) {
     var self = this;
@@ -452,6 +481,45 @@ class App extends Component {
     }
     return true;
   }
+  processKeyCode(keyCode)
+  {
+    // A-Z
+    if ((keyCode >= 0x41 && keyCode <= 0x5a) ||
+        (keyCode >= 0x61 && keyCode <= 0x7a)) {
+      var ch = String.fromCharCode(keyCode)
+      this.type(ch.toUpperCase());
+      return true;
+    }
+
+    switch (keyCode) {
+      case 0x8:
+        this.backspace();
+        return true;
+      case 0x9:
+        this.navNextClue();
+        return true;
+      case 0x20:
+        this.switchDir();
+        return true;
+      case 0x25:
+        this.navLeft();
+        return true;
+      case 0x26:
+        this.navUp();
+        return true;
+      case 0x27:
+        this.navRight();
+        return true;
+      case 0x28:
+        this.navDown();
+        return true;
+      case 0x2e:
+        this.del();
+        return true;
+      default:
+        return false;
+    }
+  }
   handleKeyDown(e) {
     if (this.state.direction === 'A' && (e.keyCode == 0x26 || e.keyCode == 0x28)) {
       this.selectCell(this.state.activecell, 'D');
@@ -463,36 +531,8 @@ class App extends Component {
       e.preventDefault();
       return;
     }
-
-    // A-Z
-    if ((e.keyCode >= 0x41 && e.keyCode <= 0x5a)) {
-      var ch = e.key.toUpperCase();
-      return this.type(ch);
-    }
-
-    switch (e.keyCode) {
-      case 0x8:
-        e.preventDefault();
-        return this.backspace();
-      case 0x20:
-        e.preventDefault();
-        return this.switchDir();
-      case 0x25:
-        e.preventDefault();
-        return this.navLeft();
-      case 0x26:
-        e.preventDefault();
-        return this.navUp();
-      case 0x27:
-        e.preventDefault();
-        return this.navRight();
-      case 0x28:
-        e.preventDefault();
-        return this.navDown();
-      case 0x2e:
-        e.preventDefault();
-        return this.del();
-      default:
+    if (this.processKeyCode(e.keyCode)) {
+      e.preventDefault();
     }
   }
   handleClick(i) {
@@ -646,6 +686,7 @@ class App extends Component {
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
+    self.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
   }
   componentWillUnmount() {
     var self = this;
@@ -664,6 +705,7 @@ class App extends Component {
           </div>
           <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
         </div>
+        <MobileKeyboard onClick={(code) => this.processKeyCode(code)}/>
         <FileInput onChange={(puz) => this.puzzleLoaded(puz)}/>
       </div>
     );
