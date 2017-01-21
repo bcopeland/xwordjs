@@ -5,9 +5,7 @@ import './App.css';
 // Replace website javascript-crossword with this
 //  . GitHub
 //  . resize for better mobile exp
-//  . single line mobile clue display
 //  . titles
-//  . easy links for xd files
 //  . better popup dlg on success
 //  . answer link
 
@@ -707,7 +705,13 @@ class App extends Component {
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
-    self.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
+
+    var puzzle = window.location.search.substring(1);
+    if (puzzle.match(/^[a-zA-Z0-9-]*.xd$/)) {
+      self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
+    } else {
+      self.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
+    }
   }
   componentWillUnmount() {
     var self = this;
