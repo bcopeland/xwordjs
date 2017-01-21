@@ -2,12 +2,6 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import './Xword.css';
 
-// Version 1.0:
-// Replace website javascript-crossword with this
-//  . GitHub
-//  . answer link
-//  . error cleanup
-
 // TODO
 //  . usability
 //  . styling
@@ -24,7 +18,6 @@ import './Xword.css';
 //  . reveal clue
 //  . show errors
 //  . phone interface
-//   . mini-clue entry
 //   . clue only entry
 //  . puz file loader
 //  . restyle input selection
@@ -315,6 +308,7 @@ class XwordMain extends Component {
       this.state.cells.push(new XwordCell({'fill': '.'}));
     }
     this.closeModal = this.closeModal.bind(this);
+    this.showAnswers = this.showAnswers.bind(this);
   }
   loadPuzzle(url) {
     var self = this;
@@ -714,6 +708,16 @@ class XwordMain extends Component {
   closeModal() {
     this.setState({'dismissed_modal': true});
   }
+  showAnswers() {
+    this.setState({'dismissed_modal': true});
+    for (var i=0; i < this.state.cells.length; i++) {
+      var cell = this.state.cells[i];
+      if (!cell.isBlack())
+        cell.setState({'entry': cell.get('fill')});
+    }
+    var newcells = this.state.cells.slice();
+    this.setState({'cells': newcells});
+  }
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
@@ -724,6 +728,7 @@ class XwordMain extends Component {
     } else {
       self.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
     }
+
   }
   componentWillUnmount() {
     var self = this;
@@ -751,6 +756,7 @@ class XwordMain extends Component {
           </div>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
         </div>
+        <a href="#" onClick={() => this.showAnswers()}>Answers</a>
       </div>
     );
   }
