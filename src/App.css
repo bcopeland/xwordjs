@@ -23,8 +23,14 @@
   to { transform: rotate(360deg); }
 }
 
+.xwordjs-vertical-container {
+  display: flex;
+  flex-direction: column;
+}
+
 .xwordjs-container {
   display: flex;
+  flex-direction: row;
 }
 
 .xwordjs-grid {
@@ -36,8 +42,18 @@
   display: flex;
 }
 
+.xwordjs-cell-top {
+  border-top-style: solid;
+}
+
+.xwordjs-cell-left {
+  border-left-style: solid;
+}
+
 .xwordjs-cell {
-  border-style: solid;
+  border-width: 1px;
+  border-bottom-style: solid;
+  border-right-style: solid;
   width: 40px;
   height: 40px;
 }
@@ -68,15 +84,17 @@
 
 .xwordjs-cluelist-container {
   display: flex;
+  height: 550px;
   width: 300px;
 }
 
 .xwordjs-cluelist {
-  height: 600px;
-  width: 300px;
+  height: 100%;
+  width: 250px;
   overflow-y: scroll;
   overflow-x: hidden;
   text-align: left;
+  margin-left: 1em;
 }
 
 .xwordjs-clue-active {
@@ -93,15 +111,13 @@
 }
 
 .xwordjs-topbar {
-  /* display: flex; */
-  display: none;
+  display: flex;
   width: 100%;
-  justify-content: center;
 }
 
 .xwordjs-timer {
-  display: flex;
-  margin-right: 20px;
+  /* display: flex; */
+  display: none;
 }
 
 .xwordjs-keyboard-key {
@@ -121,6 +137,18 @@
 .xwordjs-keyboard {
   display: flex;
   flex-direction: column;
+}
+
+.xwordjs-title {
+  margin: 1em 1em 1em 1em;
+}
+
+.xwordjs-title-text {
+  font-size: 2em;
+}
+
+.xwordjs-author-text {
+  font-size: 1.5em;
 }
 
 /* mobile settings */

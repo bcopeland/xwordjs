@@ -5,7 +5,6 @@ import './App.css';
 // Replace website javascript-crossword with this
 //  . GitHub
 //  . resize for better mobile exp
-//  . titles
 //  . better popup dlg on success
 //  . answer link
 
@@ -83,6 +82,15 @@ class XwordCell {
   isBlack() {
     return this.state.fill === '#';
   }
+}
+
+function Title(props) {
+  return (
+      <div className={"xwordjs-title"}>
+        <span className={"xwordjs-title-text"}>{props.title}</span>
+        <span className={"xwordjs-author-text"}> by {props.author}</span>
+      </div>
+  );
 }
 
 function ClueBar(props) {
@@ -219,7 +227,7 @@ class Grid extends Component {
         }
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
-         number={number}
+         isTop={i==0} isLeft={j==0} number={number}
          onClick={(x)=>this.props.handleClick(x.substring(5))}/>;
         row_cells.push(cell);
       }
@@ -268,6 +276,12 @@ function Cell(props) {
   if (props.isBlack) {
     classname += " xwordjs-cell-black";
   }
+  if (props.isTop) {
+    classname += " xwordjs-cell-top";
+  }
+  if (props.isLeft) {
+    classname += " xwordjs-cell-top-left";
+  }
   if (props.isFocus) {
     classname += " xwordjs-cell-focus";
   } else if (props.isActive) {
@@ -309,6 +323,8 @@ class App extends Component {
       'width': 15,
       'cells': [],
       'clues': [],
+      'title': 'Puzzle',
+      'author': 'unknown',
       'activecell': 0,
       'direction': 'A',
       'cell_to_clue_table': [],
@@ -565,6 +581,19 @@ class App extends Component {
     var grid = puz.grid;
     var maxx = grid[0].length;
     var maxy = grid.length;
+    var i;
+    var title = 'Untitled';
+    var author = 'Unknown';
+
+    for (i=0; i < puz.headers.length; i++) {
+      var [type, value] = puz.headers[i];
+      console.log(type);
+      if (type === 'Title') {
+        title = value;
+      } else if (type === 'Creator' || type === 'Author') {
+        author = value;
+      }
+    }
 
     var cells = Array(maxx * maxy).fill(null);
     var cell_to_clue_table = Array(maxx * maxy).fill(null);
@@ -598,7 +627,7 @@ class App extends Component {
     var clues = [];
     var clue_to_cell_table = [];
 
-    for (var i=0; i < puz.clues.length; i++) {
+    for (i=0; i < puz.clues.length; i++) {
       var [type, cluestr, answer] = puz.clues[i];
       var [dir, num] = type;
       var clue = new XwordClue({
@@ -629,6 +658,7 @@ class App extends Component {
       }
     }
     this.setState({
+      'title': title, 'author': author,
       'width': maxx, 'height': maxy, 'cells': cells, 'clues': clues,
       'clue_to_cell_table': clue_to_cell_table,
       'cell_to_clue_table': cell_to_clue_table
@@ -721,18 +751,19 @@ class App extends Component {
     var self = this;
     return (
       <div className="App">
-        <div className="xwordjs-topbar">
-          <Timer/>
-        </div>
-        <div className="xwordjs-container">
-          <div>
-            <ClueBar value={this.state.clues}/>
+        <div className="xwordjs-vertical-container">
+          <div className="xwordjs-topbar">
+            <Title title={this.state.title} author={this.state.author}/>
+            <Timer/>
+          </div>
+          <ClueBar value={this.state.clues}/>
+          <div className="xwordjs-container">
             <div className="xwordjs-grid">
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
-            <MobileKeyboard onClick={(code) => this.processKeyCode(code)}/>
+            <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
           </div>
-          <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
+          <MobileKeyboard onClick={(code) => this.processKeyCode(code)}/>
         </div>
       </div>
     );
