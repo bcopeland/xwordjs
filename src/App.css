@@ -87,6 +87,18 @@
   background-color: #7fb77f
 }
 
+.xwordjs-clue-bar {
+  background-color: #7fb77f;
+  height: 40px;
+}
+
+.xwordjs-topbar {
+  /* display: flex; */
+  display: none;
+  width: 100%;
+  justify-content: center;
+}
+
 .xwordjs-timer {
   display: flex;
   margin-right: 20px;
@@ -109,4 +121,21 @@
 .xwordjs-keyboard {
   display: flex;
   flex-direction: column;
+}
+
+/* mobile settings */
+@media screen and (max-width:600px) {
+  .xwordjs-cluelist-container {
+    display: none;
+  }
+}
+
+/* desktop settings */
+@media screen and (min-width:600px) {
+  .xwordjs-keyboard {
+    display: none;
+  }
+  .xwordjs-clue-bar {
+    display: none;
+  }
 }

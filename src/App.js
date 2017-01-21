@@ -1,14 +1,23 @@
 import React, { Component } from 'react';
 import './App.css';
 
-//
-// TODO:
+// Version 1.0:
+// Replace website javascript-crossword with this
+//  . GitHub
+//  . resize for better mobile exp
+//  . single line mobile clue display
+//  . titles
+//  . easy links for xd files
+//  . better popup dlg on success
+//  . answer link
+
+// TODO
 //  . usability
 //  . styling
 //   . timer centered
 //   . pause 'button'
 //   . title
-//   . color of alt clue
+//   . colors
 //  . polish
 //   . no click on black squares
 //   . clue resize to grid height
@@ -19,7 +28,6 @@ import './App.css';
 //  . reveal clue
 //  . show errors
 //  . phone interface
-//   . softkey entry
 //   . mini-clue entry
 //   . clue only entry
 //  . puz file loader
@@ -31,6 +39,8 @@ import './App.css';
 //  . dictionary loader
 //  . javacsript filler
 //  . fill statistics - scrabble score etc
+//  . timer
+//  . file drop
 //  'A' => 0, 'D' => 1 constants
 var Xd = require("./xd.js");
 
@@ -75,6 +85,17 @@ class XwordCell {
   isBlack() {
     return this.state.fill === '#';
   }
+}
+
+function ClueBar(props) {
+  var text = '';
+  for (var i=0; i < props.value.length; i++) {
+    var clue = props.value[i];
+    if (clue.get('active')) {
+      text = clue.get('number') + ". " + clue.get('clue');
+    }
+  }
+  return <div className={"xwordjs-clue-bar"}>{text}</div>;
 }
 
 function Clue(props) {
@@ -700,13 +721,15 @@ class App extends Component {
           <Timer/>
         </div>
         <div className="xwordjs-container">
-          <div className="xwordjs-grid">
-            <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
+          <div>
+            <ClueBar value={this.state.clues}/>
+            <div className="xwordjs-grid">
+              <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
+            </div>
+            <MobileKeyboard onClick={(code) => this.processKeyCode(code)}/>
           </div>
           <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
         </div>
-        <MobileKeyboard onClick={(code) => this.processKeyCode(code)}/>
-        <FileInput onChange={(puz) => this.puzzleLoaded(puz)}/>
       </div>
     );
   }
