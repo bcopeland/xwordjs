@@ -280,7 +280,7 @@ function Cell(props) {
     classname += " xwordjs-cell-top";
   }
   if (props.isLeft) {
-    classname += " xwordjs-cell-top-left";
+    classname += " xwordjs-cell-left";
   }
   if (props.isFocus) {
     classname += " xwordjs-cell-focus";

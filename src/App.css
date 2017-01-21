@@ -2,27 +2,6 @@
   text-align: center;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
-}
-
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
-}
-
-.App-intro {
-  font-size: large;
-}
-
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .xwordjs-vertical-container {
   display: flex;
   flex-direction: column;
@@ -36,6 +15,7 @@
 .xwordjs-grid {
   flex-flow: row wrap;
   display: inline;
+  margin: 10px;
 }
 
 .xwordjs-grid-row {
@@ -94,7 +74,7 @@
   overflow-y: scroll;
   overflow-x: hidden;
   text-align: left;
-  margin-left: 1em;
+  margin-left: 10px;
 }
 
 .xwordjs-clue-active {
@@ -155,6 +135,30 @@
 @media screen and (max-width:600px) {
   .xwordjs-cluelist-container {
     display: none;
+  }
+  .xwordjs-cluelist {
+    display: none;
+  }
+  .xwordjs-keyboard-key {
+    height: 21px;
+    width: 21px;
+    line-height: 21px;
+  }
+  .xwordjs-cell {
+    width: 21px;
+    height: 21px;
+  }
+ .xwordjs-cell-text {
+    line-height: 21px;
+  }
+  .xwordjs-cell-number {
+    font-size: 0.5em;
+  }
+  .xwordjs-title-text {
+    font-size: 1em;
+  }
+  .xwordjs-author-text {
+    font-size: 1em;
   }
 }
 
