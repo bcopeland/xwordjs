@@ -74,10 +74,10 @@ function Xd(data) {
 
         if (pos.charAt(0) === 'A' || pos.charAt(0) === 'D') {
           cluedir = pos.substr(0, 1);
-          cluenum = parseInt(pos.substr(1));
+          cluenum = parseInt(pos.substr(1), 10);
         } else {
           cluedir = "";
-          cluenum = parseInt(pos);
+          cluenum = parseInt(pos, 10);
         }
 
         self.clues.push([[cluedir, cluenum], clue.trim(), answer.trim()])
@@ -139,7 +139,7 @@ function Xd(data) {
     };
 
     var clues = [];
-    for (var i=0; i < self.clues.length; i++) {
+    for (i=0; i < self.clues.length; i++) {
       var clue = self.clues[i];
       var dir = clue[0][0];
       var num = clue[0][1];

@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import XwordMain from './Xword';
 import './index.css';
 
 ReactDOM.render(
-  <App />,
+  <XwordMain />,
   document.getElementById('root')
 );

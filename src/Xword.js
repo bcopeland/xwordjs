@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
-import './App.css';
+import Modal from 'react-modal';
+import './Xword.css';
 
 // Version 1.0:
 // Replace website javascript-crossword with this
 //  . GitHub
-//  . resize for better mobile exp
-//  . better popup dlg on success
 //  . answer link
+//  . error cleanup
 
 // TODO
 //  . usability
@@ -16,7 +16,6 @@ import './App.css';
 //   . title
 //   . colors
 //  . polish
-//   . no click on black squares
 //   . clue resize to grid height
 //   . shift-tab focus last letter
 //   . scrollIntoViewIfNeeded(centered) - polyfill
@@ -85,10 +84,13 @@ class XwordCell {
 }
 
 function Title(props) {
+  var title = props.title;
+  var author = props.author ? "by " + props.author : "";
+
   return (
       <div className={"xwordjs-title"}>
-        <span className={"xwordjs-title-text"}>{props.title}</span>
-        <span className={"xwordjs-author-text"}> by {props.author}</span>
+        <span className={"xwordjs-title-text"}>{title}</span>
+        <span className={"xwordjs-author-text"}>{author}</span>
       </div>
   );
 }
@@ -191,8 +193,8 @@ class Timer extends Component {
     var sec = Math.floor(elapsed % 60);
     var min = Math.floor(elapsed / 60);
 
-    var sec = (sec < 10) ? "0" + sec : sec;
-    var min = (min < 10) ? "0" + min : min;
+    sec = (sec < 10) ? "0" + sec : sec;
+    min = (min < 10) ? "0" + min : min;
 
     var time_text = min + ":" + sec;
     return (
@@ -227,7 +229,7 @@ class Grid extends Component {
         }
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
-         isTop={i==0} isLeft={j==0} number={number}
+         isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(x.substring(5))}/>;
         row_cells.push(cell);
       }
@@ -254,9 +256,9 @@ function MobileKeyboard(props) {
     for (var j=0; j < rowstr.length; j++) {
       var ch = rowstr.charAt(j);
       var code;
-      if (ch == '␣') {
+      if (ch === '␣') {
         code = 0x20;
-      } else if (ch == '⌫') {
+      } else if (ch === '⌫') {
         code = 0x8;
       } else {
         code = ch.charCodeAt(0);
@@ -293,29 +295,7 @@ function Cell(props) {
           </div>;
 }
 
-class FileInput extends Component {
-  handleChange(evt) {
-    var file = evt.target.files[0];
-    if (file) {
-      var r = new FileReader();
-      var self = this;
-      r.onload = function(e) {
-        var contents = e.target.result;
-        console.log(contents);
-        var puz = new Xd(contents);
-        self.props.onChange(puz);
-      }
-      r.readAsText(file);
-    }
-  }
-  render() {
-    return (
-      <input type="file" onChange={(evt) => this.handleChange(evt)}/>
-    );
-  }
-}
-
-class App extends Component {
+class XwordMain extends Component {
   constructor() {
     super();
     this.state = {
@@ -323,16 +303,18 @@ class App extends Component {
       'width': 15,
       'cells': [],
       'clues': [],
-      'title': 'Puzzle',
-      'author': 'unknown',
+      'title': '',
+      'author': '',
       'activecell': 0,
       'direction': 'A',
       'cell_to_clue_table': [],
       'clue_to_cell_table': [],
+      'dismissed_modal': false,
     }
     for (var i = 0; i < this.state.width * this.state.height; i++) {
       this.state.cells.push(new XwordCell({'fill': '.'}));
     }
+    this.closeModal = this.closeModal.bind(this);
   }
   loadPuzzle(url) {
     var self = this;
@@ -340,7 +322,6 @@ class App extends Component {
     fetch(request).then(function(response) {
       return response.text();
     }).then(function(data) {
-      console.log(data);
       var puz = new Xd(data);
       self.puzzleLoaded(puz);
     });
@@ -464,7 +445,6 @@ class App extends Component {
     var cur_cell_id = this.state.activecell;
     var clue_id = this.state.cell_to_clue_table[cur_cell_id][dind];
     var start_cell_id = this.state.clue_to_cell_table[clue_id];
-    var clue = this.state.clues[clue_id];
 
     var [x, y] = this.cellPos(cur_cell_id);
     var [start_x, start_y] = this.cellPos(start_cell_id);
@@ -489,9 +469,6 @@ class App extends Component {
     var cell = this.state.cells[this.state.activecell];
 
     cell.setState({'entry': ch});
-    if (this.isCorrect()) {
-      alert("you did it!");
-    }
     this.navNext();
   }
   del() {
@@ -516,7 +493,7 @@ class App extends Component {
     }
     return true;
   }
-  processKeyCode(keyCode)
+  processKeyCode(keyCode, shift)
   {
     // A-Z
     if ((keyCode >= 0x41 && keyCode <= 0x5a) ||
@@ -531,7 +508,10 @@ class App extends Component {
         this.backspace();
         return true;
       case 0x9:
-        this.navNextClue();
+        if (!shift)
+          this.navNextClue();
+        else
+          this.navPrevClue();
         return true;
       case 0x20:
         this.switchDir();
@@ -556,17 +536,17 @@ class App extends Component {
     }
   }
   handleKeyDown(e) {
-    if (this.state.direction === 'A' && (e.keyCode == 0x26 || e.keyCode == 0x28)) {
+    if (this.state.direction === 'A' && (e.keyCode === 0x26 || e.keyCode === 0x28)) {
       this.selectCell(this.state.activecell, 'D');
       e.preventDefault();
       return;
     }
-    if (this.state.direction === 'D' && (e.keyCode == 0x25 || e.keyCode == 0x27)) {
+    if (this.state.direction === 'D' && (e.keyCode === 0x25 || e.keyCode === 0x27)) {
       this.selectCell(this.state.activecell, 'A');
       e.preventDefault();
       return;
     }
-    if (this.processKeyCode(e.keyCode)) {
+    if (this.processKeyCode(e.keyCode, e.shiftKey)) {
       e.preventDefault();
     }
   }
@@ -586,11 +566,10 @@ class App extends Component {
     var author = 'Unknown';
 
     for (i=0; i < puz.headers.length; i++) {
-      var [type, value] = puz.headers[i];
-      console.log(type);
-      if (type === 'Title') {
+      var [header, value] = puz.headers[i];
+      if (header === 'Title') {
         title = value;
-      } else if (type === 'Creator' || type === 'Author') {
+      } else if (header === 'Creator' || header === 'Author') {
         author = value;
       }
     }
@@ -645,12 +624,12 @@ class App extends Component {
       // index into clues[].  Iterate over answer in the direction
       // of the clue to set all cells making up the answer
       var ind = 0, xincr = 0, yincr = 0;
-      if (dir == 'A') {
+      if (dir === 'A') {
         xincr = 1;
       } else {
         ind = 1; yincr = 1;
       }
-      var [x, y] = xy;
+      [x, y] = xy;
       for (var j = 0; j < answer.length; j++) {
         var cell = y * maxx + x;
         cell_to_clue_table[cell][ind] = i;
@@ -732,6 +711,9 @@ class App extends Component {
     var cell = this.state.clue_to_cell_table[cluenum];
     this.selectCell(cell, clue.get('direction'));
   }
+  closeModal() {
+    this.setState({'dismissed_modal': true});
+  }
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
@@ -748,9 +730,13 @@ class App extends Component {
     window.removeEventListener("keydown", (e) => self.handleKeyDown(e));
   }
   render() {
-    var self = this;
     return (
-      <div className="App">
+      <div className="XwordMain">
+        <Modal isOpen={this.isCorrect() && !this.state.dismissed_modal}>
+          <h1>Nice job!</h1>
+          <p>You solved it.  Sorry for the anticlimactic dialog.</p>
+          <button onClick={this.closeModal}>OK</button>
+        </Modal>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
@@ -763,11 +749,11 @@ class App extends Component {
             </div>
             <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
           </div>
-          <MobileKeyboard onClick={(code) => this.processKeyCode(code)}/>
+          <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
         </div>
       </div>
     );
   }
 }
 
-export default App;
+export default XwordMain;
