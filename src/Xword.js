@@ -78,7 +78,7 @@ class XwordCell {
 
 function Title(props) {
   var title = props.title;
-  var author = props.author ? "by " + props.author : "";
+  var author = props.author ? " by " + props.author : "";
 
   return (
       <div className={"xwordjs-title"}>
