@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
+import FileInput from './FileInput.js';
 import './Xword.css';
 
 // TODO
@@ -305,9 +306,6 @@ class XwordMain extends Component {
       'clue_to_cell_table': [],
       'dismissed_modal': false,
     }
-    for (var i = 0; i < this.state.width * this.state.height; i++) {
-      this.state.cells.push(new XwordCell({'fill': '.'}));
-    }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
   }
@@ -319,7 +317,8 @@ class XwordMain extends Component {
     }).then(function(data) {
       var puz;
       if (url.endsWith("xd")) {
-        puz = new Xd(data.toString());
+        var decoder = new TextDecoder('utf-8');
+        puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(puz);
       } else {
         puz = new Puz(data);
@@ -732,16 +731,20 @@ class XwordMain extends Component {
     var puzzle = window.location.search.substring(1);
     if (puzzle.match(/^[a-zA-Z0-9-]*.xd$/)) {
       self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
-    } else {
-      self.loadPuzzle(process.env.PUBLIC_URL + "index.puz");
     }
-
   }
   componentWillUnmount() {
     var self = this;
     window.removeEventListener("keydown", (e) => self.handleKeyDown(e));
   }
   render() {
+    if (this.state.cells.length === 0) {
+      return (
+        <div className="XwordMain">
+          <FileInput onChange={(x) => this.loadPuzzle(x)} />
+        </div>
+      );
+    }
     return (
       <div className="XwordMain">
         <Modal isOpen={this.isCorrect() && !this.state.dismissed_modal}>

@@ -3,18 +3,11 @@ import React, { Component } from 'react';
 class FileInput extends Component {
   constructor() {
     super();
-    this.onLoad = this.onLoad.bind(this);
-  }
-  onLoad(e) {
-    this.props.onLoad(e.target.result);
+    this.handleChange = this.handleChange.bind(this);
   }
   handleChange(evt) {
     var file = evt.target.files[0];
-    if (file) {
-      var r = new FileReader();
-      r.onload = this.onLoad;
-      r.readAsText(file);
-    }
+    this.props.onChange(window.URL.createObjectURL(file));
   }
   render() {
     return (
