@@ -32,6 +32,7 @@ import './Xword.css';
 //  . file drop
 //  'A' => 0, 'D' => 1 constants
 var Xd = require("./xd.js");
+var Puz = require("./puz.js");
 
 class XwordClue {
   constructor(options) {
@@ -314,10 +315,16 @@ class XwordMain extends Component {
     var self = this;
     var request = new Request(url);
     fetch(request).then(function(response) {
-      return response.text();
+      return response.arrayBuffer();
     }).then(function(data) {
-      var puz = new Xd(data);
-      self.puzzleLoaded(puz);
+      var puz;
+      if (url.endsWith("xd")) {
+        puz = new Xd(data.toString());
+        self.puzzleLoaded(puz);
+      } else {
+        puz = new Puz(data);
+        self.puzzleLoaded(puz);
+      }
     });
   }
   cellPos(clue_id) {
@@ -726,7 +733,7 @@ class XwordMain extends Component {
     if (puzzle.match(/^[a-zA-Z0-9-]*.xd$/)) {
       self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
     } else {
-      self.loadPuzzle(process.env.PUBLIC_URL + "index.xd");
+      self.loadPuzzle(process.env.PUBLIC_URL + "index.puz");
     }
 
   }
