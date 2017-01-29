@@ -6,8 +6,12 @@ import './Xword.css';
 // TODO
 //  . usability
 //  . styling
-//   . timer centered
-//   . pause 'button'
+//   . timer
+//    . center over puzzle?
+//    . change pause to play / color when activated / not
+//    . larger pause button
+//    . smaller top/bottom margins
+//    . user-select everywhere to avoid selection & text cursor
 //   . title
 //   . colors
 //  . polish
@@ -193,7 +197,10 @@ class Timer extends Component {
 
     var time_text = min + ":" + sec;
     return (
-      <div className="xwordjs-timer"><span>{time_text}</span><div className="xwordjs-timer-pause" onClick={this.handleClick}><b>&#8545;</b></div></div>
+      <div className="xwordjs-timer">
+         <div className="xwordjs-timer-text">{time_text}</div>
+         <div className="xwordjs-timer-pause" onClick={this.handleClick}><b>&#8545;</b></div>
+      </div>
     );
   }
   componentDidMount() {
@@ -755,8 +762,8 @@ class XwordMain extends Component {
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
-            <Timer/>
           </div>
+          <Timer/>
           <ClueBar value={this.state.clues}/>
           <div className="xwordjs-container">
             <div className="xwordjs-grid">
