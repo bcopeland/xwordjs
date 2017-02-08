@@ -80,6 +80,8 @@ class XwordCell {
     circled: boolean,
     number: number,
     version: number,
+    modified: boolean,
+    free: boolean,
   };
 
   constructor(options) {
@@ -90,6 +92,8 @@ class XwordCell {
       focus: false,
       circled: false,
       version: 0,
+      modified: false,
+      free: true,
       number: 0,
     };
     Object.assign(this.state, options);
@@ -180,6 +184,61 @@ function Clues(props) {
 }
 
 class Grid extends Component {
+  testUnchecked(x, y) {
+    console.log("test unch " + x + " " + y);
+    var count = 0;
+    // look back
+    for (var xi = 1; xi < 4; xi++) {
+      if (x - xi < 0)
+        break;
+      var ind = y * this.props.width + (x - xi);
+      if (this.props.cells[ind].isBlack())
+        break;
+      count++;
+    }
+    if (count && count < 3)
+      return true;
+
+    // look ahead
+    count = 0;
+    for (var xi = 1; xi < 4; xi++) {
+      if (x + xi >= this.props.width)
+        break;
+      var ind = y * this.props.width + (x + xi);
+      if (this.props.cells[ind].isBlack())
+        break;
+      count++;
+    }
+    if (count && count < 3)
+      return true;
+
+    // look up
+    count = 0;
+    for (var yi = 1; yi < 4; yi++) {
+      if (y - yi < 0)
+        break;
+      var ind = (y - yi) * this.props.width + x;
+      if (this.props.cells[ind].isBlack())
+        break;
+      count++;
+    }
+    if (count && count < 3)
+      return true;
+
+    count = 0;
+    for (var yi = 1; yi < 4; yi++) {
+      if (y + yi >= this.props.height)
+        break;
+      var ind = (y + yi) * this.props.width + x;
+      if (this.props.cells[ind].isBlack())
+        break;
+      count++;
+    }
+    if (count && count < 3)
+      return true;
+
+    return false;
+  }
   render() {
     var rows = [];
     for (var i=0; i < this.props.height; i++) {
@@ -197,9 +256,11 @@ class Grid extends Component {
         if (fill === '#' || fill === '.') {
           fill = ' ';
         }
+
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
          isCircled={circled}
+         isUncheckFree={!this.testUnchecked(j, i)}
          isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(parseInt(x.substring(5), 10))}/>;
         row_cells.push(cell);
@@ -246,6 +307,8 @@ function Cell(props) {
   var classname="xwordjs-cell";
   if (props.isBlack) {
     classname += " xwordjs-cell-black";
+  } else if (!props.isUncheckFree) {
+    classname += " xwordjs-cell-notfree";
   }
   if (props.isTop) {
     classname += " xwordjs-cell-top";
@@ -355,6 +418,48 @@ class XwordMain extends Component {
     } else {
       this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
     }
+  }
+  newPuzzle() {
+
+    var maxx = 15;
+    var maxy = 15;
+    var cells = new Array(maxx * maxy);
+    for (var i=0; i < maxx * maxy; i++) {
+      cells[i] = new XwordCell();
+    }
+    var clues = [];
+    var clue_to_cell_table = [];
+    for (var i=0; i < maxx; i++) {
+      var answer = '???????????????';
+      var clue = new XwordClue({
+        'index': i, 'direction': 'A', 'number': i+1, 'clue': 'Clue',
+        'answer': answer});
+      clues.push(clue);
+      clue_to_cell_table.push(i * maxx);
+    }
+    for (i=0; i < maxx; i++) {
+      var answer = '???????????????';
+      var clue = new XwordClue({
+        'index': maxx + i, 'direction': 'D', 'number': i+1, 'clue': 'Clue',
+        'answer': answer});
+      clues.push(clue);
+      clue_to_cell_table.push(i);
+    }
+    var cell_to_clue_table = new Array(maxx * maxy);
+    for (var y=0; y < maxy; y++) {
+      for (var x=0; x < maxx; x++) {
+        cell_to_clue_table[y * maxx + x] = new Array(2);
+        cell_to_clue_table[y * maxx + x][0] = y;
+        cell_to_clue_table[y * maxx + x][1] = 15 + x;
+      }
+    }
+
+    this.setState({
+      'title': 'untitled', 'author': 'unknown',
+      'width': maxx, 'height': maxy, 'cells': cells, 'clues': clues,
+      'clue_to_cell_table': clue_to_cell_table,
+      'cell_to_clue_table': cell_to_clue_table
+    });
   }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
@@ -612,12 +717,31 @@ class XwordMain extends Component {
       e.preventDefault();
     }
   }
+  toggleBlank(i) {
+    // todo: split clue into two
+    // todo: fix of by one
+    // todo: gray unusable cells
+    var [x,y] = this.cellPos(i);
+    var cell = this.state.cells[i];
+    var black = cell.isBlack();
+    cell.setState({fill: black ? ' ' : '#'});
+
+    var symx = this.state.width - x - 1;
+    var symy = this.state.height - y - 1;
+    cell = this.state.cells[this.state.width * symy + symx];
+    cell.setState({fill: black ? ' ' : '#'});
+
+    this.setState({cells: this.state.cells.slice()});
+  }
   handleClick(i: number) {
+    this.toggleBlank(i);
+    /*
     if (this.state.activecell === i) {
       this.switchDir();
     } else {
       this.selectCell(i, this.state.direction);
     }
+    */
   }
   puzzleLoaded(url: string, puz: Object) {
     var grid = puz.grid;
@@ -912,6 +1036,8 @@ class XwordMain extends Component {
       self.loadPuzzleURL(process.env.PUBLIC_URL + puzzle);
     } else if (puzzle.match(/^http/)) {
       self.loadPuzzleURL(puzzle);
+    } else if (puzzle === "new") {
+      self.newPuzzle();
     }
   }
   componentWillUnmount() {
