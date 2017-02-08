@@ -5,11 +5,15 @@
 .xwordjs-vertical-container {
   display: flex;
   flex-direction: column;
+  overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 .xwordjs-container {
   display: flex;
   flex-direction: row;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .xwordjs-grid {
@@ -114,10 +118,9 @@
 }
 
 .xwordjs-keyboard-key {
-  height: 40px;
-  width: 40px;
-  line-height: 40px;
-  background-color: #7fb77f;
+  height: 10vw;
+  width: 10vw;
+  line-height: 10vw;
   text-align: center;
   vertical-align: middle;
 }
@@ -128,8 +131,10 @@
 }
 
 .xwordjs-keyboard {
+  width: 100vw;
   display: flex;
   flex-direction: column;
+  background-color: #7fb77f;
 }
 
 .xwordjs-title {
@@ -151,11 +156,6 @@
   }
   .xwordjs-cluelist {
     display: none;
-  }
-  .xwordjs-keyboard-key {
-    height: 35px;
-    width: 35px;
-    line-height: 35px;
   }
   .xwordjs-cell {
     width: 21px;
