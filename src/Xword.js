@@ -8,10 +8,9 @@ import './Xword.css';
 //  . styling
 //   . timer
 //    . center over puzzle?
-//    . change pause to play / color when activated / not
-//    . larger pause button
 //    . smaller top/bottom margins
-//    . user-select everywhere to avoid selection & text cursor
+//    . show completion time in dialog
+//    . extract to separate file
 //   . title
 //   . colors
 //  . polish
@@ -26,14 +25,12 @@ import './Xword.css';
 //   . clue only entry
 //  . puz file loader
 //  . restyle input selection
-//  . blur overlay on timer pause
 //  . save history (local storage)
 //  . solve stats (by day)
 //  . creation app using same components as solver app
 //  . dictionary loader
 //  . javacsript filler
 //  . fill statistics - scrabble score etc
-//  . timer
 //  . file drop
 //  'A' => 0, 'D' => 1 constants
 var Xd = require("./xd.js");
@@ -156,39 +153,74 @@ function Clues(props) {
   );
 }
 
+class TimerState {
+  constructor(options) {
+    this.state = {
+      start_time: new Date().getTime(),
+      elapsed: 0,
+      paused: false,
+      stopped: false
+    };
+    Object.assign(this.state, options);
+  }
+  setState(newstate) {
+    Object.assign(this.state, newstate);
+  }
+  get(key) {
+    return this.state[key];
+  }
+  elapsedStr() {
+    var elapsed = this.state.elapsed / 1000;
+    var sec = Math.floor(elapsed % 60);
+    var min = Math.floor(elapsed / 60);
+
+    return min + " minutes and " + sec + " seconds";
+  }
+}
+
 class Timer extends Component {
   constructor(props) {
     super(props);
-    this.state = { start_time: new Date().getTime(), elapsed: 0, paused: false };
+    this.state = { timer : null };
     this.onInterval = this.onInterval.bind(this);
     this.handleClick = this.handleClick.bind(this);
   }
   onInterval() {
     var now = new Date().getTime();
-    var elapsed = this.state.elapsed + now - this.state.start_time;
-    this.setState({start_time: now, elapsed: elapsed});
+    var elapsed = this.props.value.state.elapsed + now - this.props.value.state.start_time;
+    this.props.onChange({start_time: now, elapsed: elapsed});
   }
   handleClick(e) {
     e.preventDefault();
-    if (this.state.paused) {
+    if (this.props.value.state.paused) {
       this.start();
     } else {
       this.pause();
     }
   }
   reset() {
-    this.setState({start_time: new Date().getTime(), elapsed: 0});
+    this.props.onChange({start_time: new Date().getTime(), elapsed: 0});
   }
   start() {
     var timer = setInterval(this.onInterval, 1000);
-    this.setState({start_time: new Date().getTime(), timer: timer, paused: false});
+    this.setState({timer: timer});
+    this.props.onChange({start_time: new Date().getTime(), paused: false, stopped: false});
+  }
+  stop() {
+    clearInterval(this.state.timer);
+    this.props.onChange({stopped: true});
   }
   pause() {
     clearInterval(this.state.timer);
-    this.setState({paused: true});
+    this.props.onChange({paused: true});
   }
   render() {
-    var elapsed = this.state.elapsed / 1000;
+
+    if (this.props.value.state.stopped) {
+      clearInterval(this.state.timer);
+    }
+
+    var elapsed = this.props.value.state.elapsed / 1000;
     var sec = Math.floor(elapsed % 60);
     var min = Math.floor(elapsed / 60);
 
@@ -197,9 +229,16 @@ class Timer extends Component {
 
     var time_text = min + ":" + sec;
     return (
+      <div>
+      <Modal isOpen={this.props.value.state.paused}>
+        <h1>Paused</h1>
+        <p>I guess you have something better to do than finish this right now.</p>
+        <button onClick={this.handleClick}>Resume</button>
+      </Modal>
       <div className="xwordjs-timer">
          <div className="xwordjs-timer-text">{time_text}</div>
          <div className="xwordjs-timer-pause" onClick={this.handleClick}><b>&#8545;</b></div>
+      </div>
       </div>
     );
   }
@@ -307,6 +346,7 @@ class XwordMain extends Component {
       'clues': [],
       'title': '',
       'author': '',
+      'timer': new TimerState(),
       'activecell': 0,
       'direction': 'A',
       'cell_to_clue_table': [],
@@ -739,6 +779,16 @@ class XwordMain extends Component {
     var newcells = this.state.cells.slice();
     this.setState({'cells': newcells});
   }
+  updateTimer(state) {
+    if (state.stopped)
+      return;
+
+    if (this.isCorrect()) {
+      state.stopped = true;
+    }
+    this.state.timer.setState(state);
+    this.setState({'timer': this.state.timer});
+  }
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
@@ -765,13 +815,14 @@ class XwordMain extends Component {
         <Modal isOpen={this.isCorrect() && !this.state.dismissed_modal}>
           <h1>Nice job!</h1>
           <p>You solved it.  Sorry for the anticlimactic dialog.</p>
+          <p>It took {this.state.timer.elapsedStr()}.</p>
           <button onClick={this.closeModal}>OK</button>
         </Modal>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
           </div>
-          <Timer/>
+          <Timer value={this.state.timer} onChange={(x) => this.updateTimer(x)}/>
           <ClueBar value={this.state.clues}/>
           <div className="xwordjs-container">
             <div className="xwordjs-grid">
