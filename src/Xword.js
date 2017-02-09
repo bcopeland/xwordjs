@@ -169,12 +169,17 @@ class TimerState {
   get(key) {
     return this.state[key];
   }
-  elapsedStr() {
+  elapsedStr(in_english) {
     var elapsed = this.state.elapsed / 1000;
     var sec = Math.floor(elapsed % 60);
     var min = Math.floor(elapsed / 60);
 
-    return min + " minutes and " + sec + " seconds";
+    if (in_english)
+      return min + " minutes and " + sec + " seconds";
+
+    sec = (sec < 10) ? "0" + sec : sec;
+    min = (min < 10) ? "0" + min : min;
+    return min + ":" + sec;
   }
 }
 
@@ -220,14 +225,8 @@ class Timer extends Component {
       clearInterval(this.state.timer);
     }
 
-    var elapsed = this.props.value.state.elapsed / 1000;
-    var sec = Math.floor(elapsed % 60);
-    var min = Math.floor(elapsed / 60);
+    var time_text = this.props.value.elapsedStr(false);
 
-    sec = (sec < 10) ? "0" + sec : sec;
-    min = (min < 10) ? "0" + min : min;
-
-    var time_text = min + ":" + sec;
     return (
       <div>
       <Modal isOpen={this.props.value.state.paused}>
@@ -815,7 +814,7 @@ class XwordMain extends Component {
         <Modal isOpen={this.isCorrect() && !this.state.dismissed_modal}>
           <h1>Nice job!</h1>
           <p>You solved it.  Sorry for the anticlimactic dialog.</p>
-          <p>It took {this.state.timer.elapsedStr()}.</p>
+          <p>It took {this.state.timer.elapsedStr(true)}.</p>
           <button onClick={this.closeModal}>OK</button>
         </Modal>
         <div className="xwordjs-vertical-container">
