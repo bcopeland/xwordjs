@@ -437,11 +437,19 @@ class XwordMain extends Component {
         break;
     }
     if (i === alen) {
-      // no empty square, pick next cell, iff it isn't the end of a word
+      // no empty square.
       [x, y] = this.cellPos(cur_cell_id);
-      if (this.state.direction === 'A' && x < start_x + alen - 1)
+
+      // if end of word, go to next word
+      if ((this.state.direction === 'A' && x === start_x + alen - 1) ||
+          (this.state.direction === 'D' && y === start_y + alen - 1)) {
+        this.navNextClue();
+        return;
+      }
+
+      if (this.state.direction === 'A')
         x += 1;
-      else if (this.state.direction === 'D' && y < start_y + alen - 1)
+      else
         y += 1;
     }
     var activecell = y * this.state.width + x;
