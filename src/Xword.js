@@ -269,10 +269,10 @@ class XwordMain extends Component {
       if (url.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
-        self.puzzleLoaded(puz);
+        self.puzzleLoaded(url, puz);
       } else {
         puz = new Puz(data);
-        self.puzzleLoaded(puz);
+        self.puzzleLoaded(url, puz);
       }
     });
   }
@@ -515,7 +515,7 @@ class XwordMain extends Component {
       this.selectCell(i, this.state.direction);
     }
   }
-  puzzleLoaded(puz) {
+  puzzleLoaded(url, puz) {
     var grid = puz.grid;
     var maxx = grid[0].length;
     var maxy = grid.length;
@@ -595,12 +595,43 @@ class XwordMain extends Component {
       }
     }
     this.setState({
+      'url': url,
       'title': title, 'author': author,
       'width': maxx, 'height': maxy, 'cells': cells, 'clues': clues,
       'clue_to_cell_table': clue_to_cell_table,
       'cell_to_clue_table': cell_to_clue_table
     });
+    this.loadStoredData();
     this.selectCell(0, 'A');
+  }
+  saveStoredData()
+  {
+    var key = this.state.cells.map((x) => x.state.fill).join("");
+    var data = {
+      entries: this.state.cells.map((x) => x.state.entry),
+      elapsed: this.state.timer.get('elapsed')
+    };
+    // avoid a race condition when first starting up
+    if (!data.elapsed)
+      return;
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+  loadStoredData()
+  {
+    var key = this.state.cells.map((x) => x.state.fill).join("");
+    var data = localStorage.getItem(key);
+    if (!data)
+      return;
+
+    data = JSON.parse(data);
+
+    var entries = data.entries;
+    var elapsed = data.elapsed;
+    for (var i=0; i < entries.length; i++) {
+      this.state.cells[i].setState({entry: entries[i]});
+    }
+    this.state.timer.setState({elapsed: elapsed});
+    this.setState({cells: this.state.cells, timer: this.state.timer});
   }
   highlightClue(clue, active)
   {
@@ -689,6 +720,7 @@ class XwordMain extends Component {
     if (this.isCorrect()) {
       state.stopped = true;
     }
+    this.saveStoredData();
     this.state.timer.setState(state);
     this.setState({'timer': this.state.timer});
   }
