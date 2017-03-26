@@ -10,8 +10,6 @@ import './Xword.css';
 //   . timer
 //    . center over puzzle?
 //    . smaller top/bottom margins
-//    . show completion time in dialog
-//    . extract to separate file
 //   . title
 //   . colors
 //  . polish
@@ -26,7 +24,6 @@ import './Xword.css';
 //   . clue only entry
 //  . puz file loader
 //  . restyle input selection
-//  . save history (local storage)
 //  . solve stats (by day)
 //  . creation app using same components as solver app
 //  . dictionary loader
@@ -65,6 +62,7 @@ class XwordCell {
       'entry': ' ',
       'active': false,
       'focus': false,
+      'circled': false,
       'number': null,
     };
     Object.assign(this.state, options);
@@ -165,6 +163,7 @@ class Grid extends Component {
         var entry = this.props.cells[ind].get('entry');
         var active = this.props.cells[ind].get('active');
         var focus = this.props.cells[ind].get('focus');
+        var circled = this.props.cells[ind].get('circled');
         var number = this.props.cells[ind].get('number') || '';
         var black = fill === '#';
 
@@ -173,6 +172,7 @@ class Grid extends Component {
         }
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
+         isCircled={circled}
          isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(x.substring(5))}/>;
         row_cells.push(cell);
@@ -233,9 +233,16 @@ function Cell(props) {
   } else if (props.isActive) {
     classname += " xwordjs-cell-active";
   }
+  var circleclass = "";
+  if (props.isCircled) {
+    circleclass = "xwordjs-cell-circled";
+  }
+
   return <div className={classname} onClick={() => props.onClick(props.id)}>
-          <div className="xwordjs-cell-number">{props.number}</div>
-          <div className="xwordjs-cell-text">{props.value}</div>
+            <div className={circleclass}>
+              <div className="xwordjs-cell-number">{props.number}</div>
+              <div className="xwordjs-cell-text">{props.value}</div>
+            </div>
           </div>;
 }
 
@@ -517,6 +524,7 @@ class XwordMain extends Component {
   }
   puzzleLoaded(url, puz) {
     var grid = puz.grid;
+    var flags = puz.flags;
     var maxx = grid[0].length;
     var maxy = grid.length;
     var i;
@@ -552,10 +560,15 @@ class XwordMain extends Component {
           number_index.push([x,y]);
           number = number_index.length;
         }
+        var circled = false;
+        if (flags) {
+          circled = flags[y][x] & puz.FLAGS.CIRCLED;
+        }
         cells[y * maxx + x] = new XwordCell({
           'fill': fill,
           'number': number,
-          'active': false
+          'active': false,
+          'circled': circled
         });
         cell_to_clue_table[y * maxx + x] = [null, null];
       }

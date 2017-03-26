@@ -2,10 +2,17 @@
  * Parse .puz crossword files.
  */
 function Puz(data) {
+  this.FLAGS = {
+    INCORRECT_ONCE: 0x10,
+    INCORRECT: 0x20,
+    REVEALED: 0x40,
+    CIRCLED: 0x80,
+  };
 
   this.headers = [];  // list of [header, value]
   this.grid = [];     // [y][x] 2-dim array
   this.clues = [];    // list of [[direction, num], clue, answer]
+  this.flags = [];     // [y][x] 2-dim array
   this.width = 0;
   this.height = 0;
   this.notes = "";
@@ -21,6 +28,31 @@ function Puz(data) {
     var str = this.decoder.decode(bytes.slice(0, i));
     ofs += i + 1;
     return [ofs, str];
+  }
+
+  this.parseSection = function(ofs, buf) {
+    var bytes = new Uint8Array(buf, ofs);
+    if (bytes.length < 6)
+      return [ofs, null];
+
+    var typestr = this.decoder.decode(bytes.slice(0, 4));
+    ofs += 4;
+    var len = new DataView(buf).getUint16(ofs, true);
+    ofs += 2;
+    // eslint-disable-next-line
+    var csum = new DataView(buf).getUint16(ofs, true);
+    ofs += 2;
+
+    if (len < bytes.length - ofs)
+      return [ofs, null];
+
+    var section = {
+      name: typestr,
+      data: bytes.slice(8, 8 + len)
+    };
+
+    ofs += len;
+    return [ofs, section];
   }
 
   this.getAnswer = function(direction, x, y) {
@@ -55,6 +87,7 @@ function Puz(data) {
     ofs += this.width * this.height;
 
     this.grid = Array(this.height);
+    this.flags = Array(this.height);
     for (var y = 0; y < this.height; y++) {
       var row = Array(this.width);
       for (var x = 0; x < this.width; x++) {
@@ -64,8 +97,8 @@ function Puz(data) {
         }
       }
       this.grid[y] = row;
+      this.flags[y] = Array(this.width).fill(0);
     }
-
 
     // strings: first authorship info and then clues
     var title;
@@ -84,6 +117,25 @@ function Puz(data) {
     for (var i = 0; i < num_clues; i++) {
       [ofs, clue] = this.parseString(ofs, buffer);
       clue_list.push(clue);
+    }
+
+    // null terminator
+    ofs += 1;
+
+    // sections (incl. flags)
+    while (ofs < buffer.byteLength) {
+      var section;
+      [ofs, section] = this.parseSection(ofs, buffer);
+      if (!section)
+        break;
+
+      if (section.name === "GEXT") {
+        for (i=0; i < section.data.length; i++) {
+          y = Math.floor(i / this.width);
+          x = i % this.width;
+          this.flags[y][x] = section.data[i];
+        }
+      }
     }
 
     // now number the grid, assigning clues as we go

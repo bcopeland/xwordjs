@@ -43,6 +43,14 @@
   user-select: none;
 }
 
+.xwordjs-cell-circled {
+  border-width: 1px;
+  border-style: solid;
+  width: 39px;
+  height: 39px;
+  border-radius: 50%;
+}
+
 .xwordjs-cell-number {
   height: 3px;
   text-align: left;
@@ -162,6 +170,10 @@
   .xwordjs-cell {
     width: 21px;
     height: 21px;
+  }
+  .xwordjs-cell-circled {
+    width: 20px;
+    height: 20px;
   }
  .xwordjs-cell-text {
     line-height: 21px;

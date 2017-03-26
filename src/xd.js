@@ -3,8 +3,13 @@
  */
 function Xd(data) {
 
+  this.FLAGS = {
+    CIRCLED: 0x80,
+  };
+
   this.headers = [];  // list of [header, value]
   this.grid = [];     // [y][x] 2-dim array
+  this.flags = [];     // [y][x] 2-dim array
   this.clues = [];    // list of [[direction, num], clue, answer]
   this.notes = "";
   this.number_index = [];
@@ -49,7 +54,16 @@ function Xd(data) {
         }
       } else if (section === 2) {
         // grid second
-        self.grid.push(line);
+
+        var flags = Array(line.length).fill(0);
+        for (var j=0; j < line.length; j++) {
+          var ch = line.charAt(j);
+          if (ch !== '#' && ch === ch.toLowerCase()) {
+            flags[j] |= self.FLAGS.CIRCLED;
+          }
+        }
+        self.grid.push(line.toUpperCase());
+        self.flags.push(flags);
       } else if (section === 3) {
         // across or down clues
         var answer_idx = line.lastIndexOf("~");
