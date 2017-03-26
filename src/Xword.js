@@ -30,9 +30,11 @@ import './Xword.css';
 //  . javacsript filler
 //  . fill statistics - scrabble score etc
 //  . file drop
+//  . file extension from choose file doesn't work
 //  'A' => 0, 'D' => 1 constants
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
+var Acpt = require("./acpt.js");
 
 class XwordClue {
   constructor(options) {
@@ -276,6 +278,10 @@ class XwordMain extends Component {
       if (url.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
+        self.puzzleLoaded(url, puz);
+      } else if (url.endsWith("acpt")) {
+        var decoder = new TextDecoder('utf-8');
+        puz = new Acpt(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
         puz = new Puz(data);
@@ -742,7 +748,7 @@ class XwordMain extends Component {
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
 
     var puzzle = window.location.search.substring(1);
-    if (puzzle.match(/^[a-zA-Z0-9-]*.xd$/)) {
+    if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz|acpt)$/)) {
       self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
     }
   }
