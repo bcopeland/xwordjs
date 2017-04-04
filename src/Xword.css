@@ -38,28 +38,30 @@
   border-width: 1px;
   border-bottom-style: solid;
   border-right-style: solid;
-  width: 40px;
-  height: 40px;
+  width: 4vh;
+  height: 4vh;
   user-select: none;
 }
 
 .xwordjs-cell-circled {
   border-width: 1px;
+  padding: 1px;
   border-style: solid;
-  width: 39px;
-  height: 39px;
+  width: 4vh;
+  height: 4vh;
   border-radius: 50%;
 }
 
 .xwordjs-cell-number {
   height: 3px;
+  padding-left: 1px;
   text-align: left;
   font-size: 0.7em;
 }
 
 .xwordjs-cell-text {
   text-align: center;
-  line-height: 40px;
+  line-height: 4vh;
   vertical-align: middle;
 }
 
@@ -78,7 +80,14 @@
 .xwordjs-cluelist-container {
   display: flex;
   height: 550px;
-  width: 300px;
+  border: 1px;
+  border-style: solid;
+  margin: 10px;
+}
+
+.xwordjs-cluelist-container h3 {
+  text-align: center;
+  margin: 10px;
 }
 
 .xwordjs-cluelist {
@@ -152,11 +161,11 @@
 }
 
 .xwordjs-title-text {
-  font-size: 2em;
+  font-size: 1.5em;
 }
 
 .xwordjs-author-text {
-  font-size: 1.5em;
+  font-size: 1.25em;
 }
 
 /* mobile settings */

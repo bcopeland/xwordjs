@@ -32,6 +32,8 @@ import './Xword.css';
 //  . file drop
 //  . file extension from choose file doesn't work
 //  'A' => 0, 'D' => 1 constants
+//  . don't take over ctrl-l
+//  . border on clues
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Acpt = require("./acpt.js");
@@ -147,7 +149,7 @@ function Clues(props) {
     }
   }
   return(
-    <div className="xwordjs-cluelist-container">
+    <div id="xwordjs-cluelist-container" className="xwordjs-cluelist-container">
       <Cluelist selectClue={props.selectClue} value={across} title="Across"/>
       <Cluelist selectClue={props.selectClue} value={down} title="Down"/>
     </div>
@@ -182,9 +184,7 @@ class Grid extends Component {
       rows[i] = <div className="xwordjs-grid-row" key={"row_" + i}>{row_cells}</div>;
     }
     return (
-      <div>
-        <div className="xwordjs-grid">{rows}</div>
-      </div>
+      <div id="xwordjs-grid-inner">{rows}</div>
     );
   }
 }
@@ -279,7 +279,7 @@ class XwordMain extends Component {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
-      } else if (url.endsWith("acpt")) {
+      } else if (url.endsWith("acpt") || url.indexOf('/puzzle/') >= 0) {
         var decoder = new TextDecoder('utf-8');
         puz = new Acpt(decoder.decode(data));
         self.puzzleLoaded(url, puz);
@@ -622,6 +622,18 @@ class XwordMain extends Component {
     });
     this.loadStoredData();
     this.selectCell(0, 'A');
+
+    // set cluelist to match grid height
+    var grid = document.getElementById("xwordjs-grid-inner");
+    var cluediv = document.getElementById("xwordjs-cluelist-container");
+    var cluelist = document.getElementsByClassName("xwordjs-cluelist");
+    var gridHeight = window.getComputedStyle(grid).getPropertyValue("height");
+    cluediv.style.height = gridHeight;
+    for (var i = 0; i < cluelist.length; i++) {
+        var e = cluelist[i];
+        var newheight = String(parseInt(gridHeight, 10) - 60) + "px";
+        e.style.height = String(parseInt(gridHeight, 10) - 60) + "px";
+    }
   }
   saveStoredData()
   {
@@ -750,6 +762,8 @@ class XwordMain extends Component {
     var puzzle = window.location.search.substring(1);
     if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz|acpt)$/)) {
       self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
+    } else if (puzzle.match(/^http/)) {
+      self.loadPuzzle(puzzle);
     }
   }
   componentWillUnmount() {
