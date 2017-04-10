@@ -44,9 +44,9 @@ function Acpt(data) {
     var playtime = lines[i++].trim();
     var puzzle_id = lines[i++].trim();
     i++; // blank
-    this.headers.push(['title', lines[i++].trim()]);
+    this.headers.push(['Title', lines[i++].trim()]);
     i++; // blank
-    this.headers.push(['author', lines[i++].trim()]);
+    this.headers.push(['Author', lines[i++].trim()]);
     i++; // blank
     this.width = parseInt(lines[i++].trim());
     i++; // blank
