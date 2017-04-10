@@ -45,10 +45,9 @@
 
 .xwordjs-cell-circled {
   border-width: 1px;
-  padding: 1px;
   border-style: solid;
-  width: 4vh;
-  height: 4vh;
+  width: 3.9vh;
+  height: 3.9vh;
   border-radius: 50%;
 }
 
