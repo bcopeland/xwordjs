@@ -315,11 +315,11 @@ class XwordMain extends Component {
       var puz;
       if (url.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
-        puz = new Xd(decoder.decode(new DataView(data)));
+        puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else if (url.endsWith("acpt") || url.indexOf('/puzzle/') >= 0) {
         var decoder = new TextDecoder('utf-8');
-        puz = new Acpt(decoder.decode(new DataView(data)));
+        puz = new Acpt(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
         puz = new Puz(data);
