@@ -716,7 +716,7 @@ class XwordMain extends Component {
       cind += incr;
     }
   }
-  selectCell(cell_id: number, direction: string, initial: boolean)
+  selectCell(cell_id: number, direction: string, initial: ?boolean)
   {
     var cell = this.state.cells[cell_id];
 
