@@ -37,7 +37,6 @@ import './Xword.css';
 //  . initial clue selection if 0 is black
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
-var Acpt = require("./acpt.js");
 
 class XwordClue {
   state: {
@@ -316,10 +315,6 @@ class XwordMain extends Component {
       if (url.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
-        self.puzzleLoaded(url, puz);
-      } else if (url.endsWith("acpt") || url.indexOf('/puzzle/') >= 0) {
-        var decoder = new TextDecoder('utf-8');
-        puz = new Acpt(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
         puz = new Puz(data);
@@ -800,7 +795,7 @@ class XwordMain extends Component {
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
 
     var puzzle = window.location.search.substring(1);
-    if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz|acpt)$/)) {
+    if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz)$/)) {
       self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
     } else if (puzzle.match(/^http/)) {
       self.loadPuzzle(puzzle);
