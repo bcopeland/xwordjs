@@ -656,18 +656,18 @@ class XwordMain extends Component {
     this.selectCell(0, 'A', true);
 
     // set cluelist to match grid height
-    var grid = document.getElementById("xwordjs-grid-inner");
+    var gridelem = document.getElementById("xwordjs-grid-inner");
     var cluediv = document.getElementById("xwordjs-cluelist-container");
     var cluelist = document.getElementsByClassName("xwordjs-cluelist");
-    var gridHeight = window.getComputedStyle(grid).getPropertyValue("height");
+    var gridHeight = window.getComputedStyle(gridelem).getPropertyValue("height");
 
     if (cluediv)
       cluediv.style.height = gridHeight;
 
-    for (var i = 0; i < cluelist.length; i++) {
+    for (i = 0; i < cluelist.length; i++) {
         var e = cluelist[i];
         var newheight = String(parseInt(gridHeight, 10) - 60) + "px";
-        e.style.height = String(parseInt(gridHeight, 10) - 60) + "px";
+        e.style.height = newheight;
     }
   }
   saveStoredData()
@@ -732,24 +732,32 @@ class XwordMain extends Component {
     var clue = this.state.clues[this.state.cell_to_clue_table[cell_id][dind]];
     var cross = this.state.clues[this.state.cell_to_clue_table[cell_id][1 - dind]];
 
+    var e;
+
     if (initial || oldcross !== cross) {
-      oldcross.setState({"crossActive": false});
-      cross.setState({"crossActive": true});
-      var e = document.getElementById("clue_" + cross.get('index'));
-      if (e)
-        e.scrollIntoView();
+      if (oldcross)
+        oldcross.setState({"crossActive": false});
+      if (cross) {
+        cross.setState({"crossActive": true});
+        e = document.getElementById("clue_" + cross.get('index'));
+        if (e)
+          e.scrollIntoView();
+      }
     }
 
     if (initial || oldclue !== clue) {
-      oldclue.setState({"active": false});
-      this.highlightClue(oldclue, false);
 
-      clue.setState({"active": true});
-      this.highlightClue(clue, true);
-
-      var e = document.getElementById("clue_" + clue.get('index'));
-      if (e)
-        e.scrollIntoView();
+      if (oldclue) {
+        oldclue.setState({"active": false});
+        this.highlightClue(oldclue, false);
+      }
+      if (clue) {
+        clue.setState({"active": true});
+        this.highlightClue(clue, true);
+        e = document.getElementById("clue_" + clue.get('index'));
+        if (e)
+          e.scrollIntoView();
+      }
     }
 
     if (initial || oldcell_id !== cell_id) {
