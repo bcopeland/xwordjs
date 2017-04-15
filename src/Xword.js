@@ -23,7 +23,6 @@ import './Xword.css';
 //  . show errors
 //  . phone interface
 //   . clue only entry
-//  . puz file loader
 //  . restyle input selection
 //  . solve stats (by day)
 //  . creation app using same components as solver app
@@ -35,6 +34,7 @@ import './Xword.css';
 //  'A' => 0, 'D' => 1 constants
 //  . don't take over ctrl-l
 //  . border on clues
+//  . initial clue selection if 0 is black
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Acpt = require("./acpt.js");
@@ -658,7 +658,7 @@ class XwordMain extends Component {
       'cell_to_clue_table': cell_to_clue_table
     });
     this.loadStoredData();
-    this.selectCell(0, 'A');
+    this.selectCell(0, 'A', true);
 
     // set cluelist to match grid height
     var grid = document.getElementById("xwordjs-grid-inner");
@@ -712,11 +712,11 @@ class XwordMain extends Component {
     var incr = clue.get('direction') === 'A' ? 1 : this.state.width;
     for (var i = 0; i < clue.get('answer').length; i++) {
       var cell = this.state.cells[cind];
-      cell.setState({"active": active, "focus": false});
+      cell.setState({"active": active});
       cind += incr;
     }
   }
-  selectCell(cell_id: number, direction: string)
+  selectCell(cell_id: number, direction: string, initial: boolean)
   {
     var cell = this.state.cells[cell_id];
 
@@ -728,43 +728,39 @@ class XwordMain extends Component {
 
     // unselect existing selected cell and crosses
     var oldcell_id = this.state.activecell;
+    var old_dind = (this.state.direction === 'A') ? 0 : 1;
+    var oldclue = this.state.clues[this.state.cell_to_clue_table[oldcell_id][old_dind]];
+    var oldcross = this.state.clues[this.state.cell_to_clue_table[oldcell_id][1 - old_dind]];
     var oldcell = this.state.cells[oldcell_id];
 
     var dind = (direction === 'A') ? 0 : 1;
-
-    var oldclue = this.state.clues[this.state.cell_to_clue_table[oldcell_id][dind]];
-    var oldcross = this.state.clues[this.state.cell_to_clue_table[oldcell_id][1 - dind]];
-
-    if (oldclue) {
-      oldclue.setState({"active": false, "crossActive": false});
-      this.highlightClue(oldclue, false);
-    }
-    if (oldcross) {
-      oldcross.setState({"active": false, "crossActive": false});
-      this.highlightClue(oldcross, false);
-    }
-
-    oldcell.setState({"active": false});
-
-    // select new cell and crosses
     var clue = this.state.clues[this.state.cell_to_clue_table[cell_id][dind]];
     var cross = this.state.clues[this.state.cell_to_clue_table[cell_id][1 - dind]];
 
-    if (cross) {
-      cross.setState({"active": false, "crossActive": true});
+    if (initial || oldcross !== cross) {
+      oldcross.setState({"crossActive": false});
+      cross.setState({"crossActive": true});
       var e = document.getElementById("clue_" + cross.get('index'));
       if (e)
         e.scrollIntoView();
     }
-    if (clue) {
-      clue.setState({"active": true, "crossActive": false});
+
+    if (initial || oldclue !== clue) {
+      oldclue.setState({"active": false});
+      this.highlightClue(oldclue, false);
+
+      clue.setState({"active": true});
+      this.highlightClue(clue, true);
+
       var e = document.getElementById("clue_" + clue.get('index'));
       if (e)
         e.scrollIntoView();
-      this.highlightClue(clue, true);
     }
 
-    cell.setState({"focus": true});
+    if (initial || oldcell_id !== cell_id) {
+      oldcell.setState({focus: false});
+      cell.setState({focus: true});
+    }
     this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction});
   }
   selectClue(clue: XwordClue)
