@@ -640,8 +640,10 @@ class XwordMain extends Component {
         ind = 1; yincr = 1;
       }
       [x, y] = xy;
-      for (var j = 0; j < answer.length; j++) {
+      for (var j = 0; y < maxy && x < maxx; j++) {
         var cell = y * maxx + x;
+        if (grid[cell] === '#')
+          break;
         cell_to_clue_table[cell][ind] = i;
         x += xincr; y += yincr;
       }
@@ -703,12 +705,19 @@ class XwordMain extends Component {
   {
     var cluenum = clue.get('index');
     var cind = this.state.clue_to_cell_table[cluenum];
+    var [x, y] = this.cellPos(cind);
 
-    var incr = clue.get('direction') === 'A' ? 1 : this.state.width;
-    for (var i = 0; i < clue.get('answer').length; i++) {
-      var cell = this.state.cells[cind];
+    var x_incr = clue.get('direction') === 'A' ? 1 : 0;
+    var y_incr = !x_incr;
+
+    for (; x < this.state.width && y < this.state.height; ) {
+      var cell = this.state.cells[this.state.width * y + x];
+      if (cell.isBlack())
+        break;
+
       cell.setState({"active": active});
-      cind += incr;
+      x += x_incr;
+      y += y_incr;
     }
   }
   selectCell(cell_id: number, direction: string, initial: ?boolean)
