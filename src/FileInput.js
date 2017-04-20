@@ -7,7 +7,8 @@ class FileInput extends Component {
   }
   handleChange(evt) {
     var file = evt.target.files[0];
-    this.props.onChange(window.URL.createObjectURL(file));
+    var filename = evt.target.value;
+    this.props.onChange(window.URL.createObjectURL(file), filename);
   }
   render() {
     return (

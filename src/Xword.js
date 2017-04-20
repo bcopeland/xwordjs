@@ -37,6 +37,7 @@ import './Xword.css';
 //  . initial clue selection if 0 is black
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
+var Xpf = require("./xpf.js");
 
 class XwordClue {
   state: {
@@ -305,16 +306,21 @@ class XwordMain extends Component {
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
   }
-  loadPuzzle(url: string) {
+  loadPuzzle(url: string, filename : ?string) {
     var self = this;
     var request = new Request(url);
     fetch(request).then(function(response) {
       return response.arrayBuffer();
     }).then(function(data) {
       var puz;
-      if (url.endsWith("xd")) {
+      var fn = filename || url;
+      if (fn.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
+        self.puzzleLoaded(url, puz);
+      } else if (fn.endsWith("xml")) {
+        var decoder = new TextDecoder('utf-8');
+        puz = new Xpf(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
         puz = new Puz(data);
@@ -826,7 +832,7 @@ class XwordMain extends Component {
     if (this.state.cells.length === 0) {
       return (
         <div className="XwordMain">
-          <FileInput onChange={(x) => this.loadPuzzle(x)} />
+          <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
         </div>
       );
     }
