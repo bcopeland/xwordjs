@@ -37,9 +37,9 @@ function Xpf(data) {
         for (var j = 0; j < node.children.length; j++) {
           var child = node.children[j];
           if (child.nodeName === 'Rows')
-            this.height = parseInt(node.textContent, 10);
+            this.height = parseInt(child.textContent, 10);
           if (child.nodeName === 'Cols')
-            this.width = parseInt(node.textContent, 10);
+            this.width = parseInt(child.textContent, 10);
         }
         this.grid = Array(this.height);
         this.flags = Array(this.height);
