@@ -2,6 +2,7 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
+import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
 import './Xword.css';
 
@@ -282,6 +283,8 @@ class XwordMain extends Component {
     direction: string,
     cell_to_clue_table: Array<Array<number>>,
     clue_to_cell_table: Array<number>,
+    version: 1,
+    solutionId: null,
     dismissed_modal: boolean
   };
   closeModal: Function;
@@ -306,6 +309,21 @@ class XwordMain extends Component {
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
   }
+  loadServerPuzzle(id: string) {
+    var self = this;
+    var server = new Server({base_url: process.env.PUBLIC_URL})
+    server
+      .getSolution(id)
+      .then(function(obj) {
+        return server.getPuzzle(obj.PuzzleId)
+      })
+      .then(function(data) {
+        var decoder = new TextDecoder('utf-8');
+        var puz = new Xpf(decoder.decode(data));
+        self.setState({solutionId: id});
+        self.puzzleLoaded(id, puz);
+      });
+  }
   loadPuzzle(url: string, filename : ?string) {
     var self = this;
     var request = new Request(url);
@@ -318,7 +336,7 @@ class XwordMain extends Component {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
-      } else if (fn.endsWith("xml")) {
+      } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
         puz = new Xpf(decoder.decode(data));
         self.puzzleLoaded(url, puz);
@@ -334,7 +352,6 @@ class XwordMain extends Component {
     return [x, y];
   }
   navRight() {
-    console.log("navright");
     var [x, y] = this.cellPos(this.state.activecell);
     while (x < this.state.width) {
       x += 1;
@@ -349,7 +366,6 @@ class XwordMain extends Component {
     this.selectCell(activecell, this.state.direction);
   }
   navLeft() {
-    console.log("navleft");
     var [x, y] = this.cellPos(this.state.activecell);
     while (x >= 0) {
       x -= 1;
@@ -364,7 +380,6 @@ class XwordMain extends Component {
     this.selectCell(activecell, this.state.direction);
   }
   navUp() {
-    console.log("navup");
     var [x, y] = this.cellPos(this.state.activecell);
     while (y >= 0) {
       y -= 1;
@@ -378,7 +393,6 @@ class XwordMain extends Component {
     this.selectCell(activecell, this.state.direction);
   }
   navDown() {
-    console.log("navdown");
     var [x, y] = this.cellPos(this.state.activecell);
     while (y < this.state.height) {
       y += 1;
@@ -690,14 +704,20 @@ class XwordMain extends Component {
       return;
     localStorage.setItem(key, JSON.stringify(data));
   }
-  loadStoredData()
+  readStoredData()
   {
     var key = this.state.cells.map((x) => x.state.fill).join("");
     var data = localStorage.getItem(key);
     if (!data)
-      return;
+      return null;
 
-    data = JSON.parse(data);
+    return JSON.parse(data);
+  }
+  loadStoredData()
+  {
+    var data = this.readStoredData()
+    if (!data)
+      return;
 
     var entries = data.entries;
     var elapsed = data.elapsed;
@@ -706,6 +726,21 @@ class XwordMain extends Component {
     }
     this.state.timer.setState({elapsed: elapsed});
     this.setState({cells: this.state.cells, timer: this.state.timer});
+  }
+  diffStore()
+  {
+    var old_data = this.readStoredData();
+    var entries = this.state.cells.map((x) => x.state.entry)
+    var changed_data = entries;
+    if (old_data && old_data.entries.length === entries.length) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i] === old_data.entries[i]) {
+          changed_data[i] = "-";
+        }
+      }
+    }
+    changed_data = changed_data.join("");
+    return changed_data;
   }
   highlightClue(clue: XwordClue, active: boolean)
   {
@@ -809,15 +844,41 @@ class XwordMain extends Component {
     if (this.isCorrect()) {
       state.stopped = true;
     }
+    var fill = this.diffStore();
     this.saveStoredData();
+
     this.state.timer.setState(state);
     this.setState({'timer': this.state.timer});
+
+    if (!this.state.solutionId)
+      return;
+
+    var self = this;
+    new Server({base_url: process.env.PUBLIC_URL})
+      .postSolution(this.state.solutionId, this.state.version, fill)
+      .then(function(json) {
+        for (var i = 0; i < json.Grid.length; i++) {
+          var ch = json.Grid.charAt(i);
+          if (ch === '-')
+            continue;
+
+          var cell = self.state.cells[i];
+          if (cell && !cell.isBlack()) {
+            cell.setState({entry: ch});
+          }
+        }
+        self.setState({version: json.Version});
+      });
   }
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
-
-    var puzzle = window.location.search.substring(1);
+    var puzzle = window.location.hash.substring(1);
+    if (puzzle) {
+      self.loadServerPuzzle(puzzle);
+      return;
+    }
+    puzzle = window.location.search.substring(1);
     if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz)$/)) {
       self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
     } else if (puzzle.match(/^http/)) {
