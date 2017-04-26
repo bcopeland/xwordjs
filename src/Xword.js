@@ -845,7 +845,6 @@ class XwordMain extends Component {
       state.stopped = true;
     }
     var fill = this.diffStore();
-    this.saveStoredData();
 
     this.state.timer.setState(state);
     this.setState({'timer': this.state.timer});
@@ -859,7 +858,7 @@ class XwordMain extends Component {
       .then(function(json) {
         for (var i = 0; i < json.Grid.length; i++) {
           var ch = json.Grid.charAt(i);
-          if (ch === '-')
+          if (ch === ' ' || ch === '-')
             continue;
 
           var cell = self.state.cells[i];
@@ -868,6 +867,7 @@ class XwordMain extends Component {
           }
         }
         self.setState({version: json.Version});
+        self.saveStoredData();
       });
   }
   componentDidMount() {

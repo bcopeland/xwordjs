@@ -1,7 +1,7 @@
 class Server {
 
   constructor(options) {
-    this.base_url = options.base_url || 'http://localhost:4000';
+    this.base_url = options.base_url || '';
   }
 
   getPuzzle(id: string) {
