@@ -79,6 +79,7 @@ class XwordCell {
     focus: boolean,
     circled: boolean,
     number: number,
+    modified: boolean,
   };
 
   constructor(options) {
@@ -88,7 +89,8 @@ class XwordCell {
       active: false,
       focus: false,
       circled: false,
-      number: 0
+      modified: false,
+      number: 0,
     };
     Object.assign(this.state, options);
   }
@@ -492,18 +494,18 @@ class XwordMain extends Component {
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ch});
+    cell.setState({'entry': ch, 'modified': true});
     this.navNext();
   }
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ' '});
+    cell.setState({'entry': ' ', 'modified': true});
     this.selectCell(this.state.activecell, this.state.direction);
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'entry': ' '});
+    cell.setState({'entry': ' ', 'modified': true});
     this.navPrev();
   }
   isCorrect() {
@@ -727,21 +729,6 @@ class XwordMain extends Component {
     this.state.timer.setState({elapsed: elapsed});
     this.setState({cells: this.state.cells, timer: this.state.timer});
   }
-  diffStore()
-  {
-    var old_data = this.readStoredData();
-    var entries = this.state.cells.map((x) => x.state.entry)
-    var changed_data = entries;
-    if (old_data && old_data.entries.length === entries.length) {
-      for (var i = 0; i < entries.length; i++) {
-        if (entries[i] === old_data.entries[i]) {
-          changed_data[i] = "-";
-        }
-      }
-    }
-    changed_data = changed_data.join("");
-    return changed_data;
-  }
   highlightClue(clue: XwordClue, active: boolean)
   {
     var cluenum = clue.get('index');
@@ -844,13 +831,19 @@ class XwordMain extends Component {
     if (this.isCorrect()) {
       state.stopped = true;
     }
-    var fill = this.diffStore();
-
+    this.saveStoredData();
     this.state.timer.setState(state);
     this.setState({'timer': this.state.timer});
 
     if (!this.state.solutionId)
       return;
+
+    var fill = '';
+    for (var i=0; i < this.state.cells.length; i++) {
+      var cell = this.state.cells[i];
+      fill += cell.get('entry');
+      cell.setState({'modified': false});
+    }
 
     var self = this;
     new Server({base_url: process.env.PUBLIC_URL})
@@ -858,16 +851,12 @@ class XwordMain extends Component {
       .then(function(json) {
         for (var i = 0; i < json.Grid.length; i++) {
           var ch = json.Grid.charAt(i);
-          if (ch === ' ' || ch === '-')
-            continue;
-
           var cell = self.state.cells[i];
-          if (cell && !cell.isBlack()) {
+          if (cell && !cell.isBlack() && !cell.get('modified')) {
             cell.setState({entry: ch});
           }
         }
         self.setState({version: json.Version});
-        self.saveStoredData();
       });
   }
   componentDidMount() {
