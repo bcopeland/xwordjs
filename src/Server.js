@@ -12,6 +12,32 @@ class Server {
     });
   }
 
+  uploadPuzzle(data: File) {
+    var url = this.base_url + '/puzzle/';
+    var request = new Request(url);
+    var formData = new FormData();
+    formData.append('file', data, 'file.puz');
+    return fetch(request, {
+      method: 'POST',
+      body: formData
+    }).then(function(response) {
+      return response.json()
+    });
+  }
+
+  startSolution(puzzleId: string) {
+    var url = this.base_url + '/solution/';
+    var postdata = {
+      PuzzleId: puzzleId
+    }
+    return fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(postdata)
+    }).then(function(response) {
+      return response.json()
+    });
+  }
+
   getSolution(id: string) {
     var url = this.base_url + '/solution/' + id;
     var request = new Request(url);

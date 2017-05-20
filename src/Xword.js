@@ -322,16 +322,24 @@ class XwordMain extends Component {
       .then(function(data) {
         var decoder = new TextDecoder('utf-8');
         var puz = new Xpf(decoder.decode(data));
+        document.location.hash = id;
         self.setState({solutionId: id});
         self.puzzleLoaded(id, puz);
       });
   }
-  loadPuzzle(url: string, filename : ?string) {
+  loadPuzzle(file: File, filename : ?string) {
     var self = this;
-    var request = new Request(url);
-    fetch(request).then(function(response) {
-      return response.arrayBuffer();
-    }).then(function(data) {
+    var server = new Server({base_url: process.env.PUBLIC_URL})
+    server.uploadPuzzle(file)
+      .then(function(obj) {
+        var id = obj.Id;
+        return server.startSolution(id);
+      })
+      .then(function(obj) {
+        var solutionId = obj.Id;
+        self.loadServerPuzzle(solutionId);
+      });
+/*
       var puz;
       var fn = filename || url;
       if (fn.endsWith("xd")) {
@@ -347,6 +355,7 @@ class XwordMain extends Component {
         self.puzzleLoaded(url, puz);
       }
     });
+*/
   }
   cellPos(clue_id: number) {
     var y = Math.floor(clue_id / this.state.width);
@@ -562,6 +571,9 @@ class XwordMain extends Component {
     }
   }
   handleKeyDown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.altKey)
+      return;
+
     if (this.state.direction === 'A' && (e.keyCode === 0x26 || e.keyCode === 0x28)) {
       this.selectCell(this.state.activecell, 'D');
       e.preventDefault();
