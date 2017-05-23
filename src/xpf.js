@@ -33,6 +33,12 @@ function Xpf(data) {
     for (var i = 0; i < puz.children.length; i++) {
       var node = puz.children[i];
       switch (node.nodeName) {
+      case "Title":
+        this.headers.push(['Title', node.textContent]);
+        break;
+      case "Author":
+        this.headers.push(['Author', node.textContent]);
+        break;
       case "Size":
         for (var j = 0; j < node.children.length; j++) {
           var child = node.children[j];
