@@ -361,7 +361,7 @@ class XwordMain extends Component {
         puz = new Puz(data);
         self.puzzleLoaded(url, puz);
       }
-    });
+    }
   }
   cellPos(clue_id: number) {
     var y = Math.floor(clue_id / this.state.width);
