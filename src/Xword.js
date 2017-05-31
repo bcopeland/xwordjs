@@ -184,61 +184,6 @@ function Clues(props) {
 }
 
 class Grid extends Component {
-  testUnchecked(x, y) {
-    console.log("test unch " + x + " " + y);
-    var count = 0;
-    // look back
-    for (var xi = 1; xi < 4; xi++) {
-      if (x - xi < 0)
-        break;
-      var ind = y * this.props.width + (x - xi);
-      if (this.props.cells[ind].isBlack())
-        break;
-      count++;
-    }
-    if (count && count < 3)
-      return true;
-
-    // look ahead
-    count = 0;
-    for (var xi = 1; xi < 4; xi++) {
-      if (x + xi >= this.props.width)
-        break;
-      var ind = y * this.props.width + (x + xi);
-      if (this.props.cells[ind].isBlack())
-        break;
-      count++;
-    }
-    if (count && count < 3)
-      return true;
-
-    // look up
-    count = 0;
-    for (var yi = 1; yi < 4; yi++) {
-      if (y - yi < 0)
-        break;
-      var ind = (y - yi) * this.props.width + x;
-      if (this.props.cells[ind].isBlack())
-        break;
-      count++;
-    }
-    if (count && count < 3)
-      return true;
-
-    count = 0;
-    for (var yi = 1; yi < 4; yi++) {
-      if (y + yi >= this.props.height)
-        break;
-      var ind = (y + yi) * this.props.width + x;
-      if (this.props.cells[ind].isBlack())
-        break;
-      count++;
-    }
-    if (count && count < 3)
-      return true;
-
-    return false;
-  }
   render() {
     var rows = [];
     for (var i=0; i < this.props.height; i++) {
@@ -256,11 +201,9 @@ class Grid extends Component {
         if (fill === '#' || fill === '.') {
           fill = ' ';
         }
-
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
          isCircled={circled}
-         isUncheckFree={!this.testUnchecked(j, i)}
          isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(parseInt(x.substring(5), 10))}/>;
         row_cells.push(cell);
@@ -307,8 +250,6 @@ function Cell(props) {
   var classname="xwordjs-cell";
   if (props.isBlack) {
     classname += " xwordjs-cell-black";
-  } else if (!props.isUncheckFree) {
-    classname += " xwordjs-cell-notfree";
   }
   if (props.isTop) {
     classname += " xwordjs-cell-top";
@@ -348,6 +289,7 @@ class XwordMain extends Component {
     direction: string,
     cell_to_clue_table: Array<Array<number>>,
     clue_to_cell_table: Array<number>,
+    construct: boolean,
     version: number,
     solutionId: ?string,
     dismissed_modal: boolean,
@@ -372,10 +314,10 @@ class XwordMain extends Component {
       'cell_to_clue_table': [],
       'clue_to_cell_table': [],
       'dismissed_modal': false,
-      'version': 1,
-      'modified': false,
-      'solutionId': null,
-      'server': null,
+      modified: false,
+      version: 1,
+      construct: false,
+      solutionId: null
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
@@ -419,47 +361,75 @@ class XwordMain extends Component {
       this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
     }
   }
-  newPuzzle() {
+  rebuildEntries() {
+    var across_clues = [];
+    var down_clues = [];
+    var across_clue_to_cell_table = [];
+    var down_clue_to_cell_table = [];
+    var cell_to_clue_table = [];
+    var i = 0;
+    var clue;
+    for (var y = 0; y < this.state.width; y++) {
+      for (var x = 0; x < this.state.height; x++) {
+        var is_black = this.cellAt(x, y).isBlack();
+        var start_of_xslot = (!is_black &&
+                              (x === 0 || this.cellAt(x-1, y).isBlack()) &&
+                              (x + 1 < this.state.width && !this.cellAt(x+1, y).isBlack()));
+        var start_of_yslot = (!is_black &&
+                              (y === 0 || this.cellAt(x, y-1).isBlack()) &&
+                              (y + 1 < this.state.height && !this.cellAt(x, y+1).isBlack()));
 
+        if (start_of_xslot) {
+          clue = new XwordClue({
+            'index': i, 'direction': 'A', 'number': i+1, 'clue': 'Clue',
+            'answer': '?'});
+          across_clues.push(clue);
+          across_clue_to_cell_table.push(this.cellId(x, y));
+          i++;
+        }
+        if (start_of_yslot) {
+          clue = new XwordClue({
+            'index': i, 'direction': 'D', 'number': i+1, 'clue': 'Clue',
+            'answer': '?'});
+          down_clues.push(clue);
+          down_clue_to_cell_table.push(this.cellId(x, y));
+        }
+        cell_to_clue_table.push([0, 0]);
+        i++;
+      }
+    }
+    var clues = across_clues.concat(down_clues);
+    var clue_to_cell_table = across_clue_to_cell_table.concat(down_clue_to_cell_table);
+    for (var i=0; i < clues.length; i++) {
+      clues[i].setState({index: i});
+      var cell_id = clue_to_cell_table[i];
+      var clue_cells = this.clueCells(cell_id, clues[i].get('direction'));
+      for (var j=0; j < clue_cells.length; j++) {
+        cell_id = clue_cells[j];
+        var dir = clues[i].get('direction');
+        cell_to_clue_table[cell_id][dir == 'A' ? 0 : 1] = i;
+      }
+    }
+    this.setState({cell_to_clue_table: cell_to_clue_table,
+                   clues: clues,
+                   clue_to_cell_table: clue_to_cell_table});
+  }
+  newPuzzle() {
     var maxx = 15;
     var maxy = 15;
     var cells = new Array(maxx * maxy);
     for (var i=0; i < maxx * maxy; i++) {
       cells[i] = new XwordCell();
     }
-    var clues = [];
-    var clue_to_cell_table = [];
-    for (var i=0; i < maxx; i++) {
-      var answer = '???????????????';
-      var clue = new XwordClue({
-        'index': i, 'direction': 'A', 'number': i+1, 'clue': 'Clue',
-        'answer': answer});
-      clues.push(clue);
-      clue_to_cell_table.push(i * maxx);
-    }
-    for (i=0; i < maxx; i++) {
-      var answer = '???????????????';
-      var clue = new XwordClue({
-        'index': maxx + i, 'direction': 'D', 'number': i+1, 'clue': 'Clue',
-        'answer': answer});
-      clues.push(clue);
-      clue_to_cell_table.push(i);
-    }
-    var cell_to_clue_table = new Array(maxx * maxy);
-    for (var y=0; y < maxy; y++) {
-      for (var x=0; x < maxx; x++) {
-        cell_to_clue_table[y * maxx + x] = new Array(2);
-        cell_to_clue_table[y * maxx + x][0] = y;
-        cell_to_clue_table[y * maxx + x][1] = 15 + x;
-      }
-    }
 
     this.setState({
       'title': 'untitled', 'author': 'unknown',
-      'width': maxx, 'height': maxy, 'cells': cells, 'clues': clues,
-      'clue_to_cell_table': clue_to_cell_table,
-      'cell_to_clue_table': cell_to_clue_table
+      'width': maxx, 'height': maxy, 'cells': cells, 'clues': [],
+      'clue_to_cell_table': [],
+      'cell_to_clue_table': [],
+      construct: true
     });
+    this.rebuildEntries();
   }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
@@ -487,6 +457,30 @@ class XwordMain extends Component {
     var y = Math.floor(clue_id / this.state.width);
     var x = clue_id % this.state.width;
     return [x, y];
+  }
+  cellId(x: number, y: number) : number {
+    return y * this.state.width + x;
+  }
+  cellAt(x: number, y: number) : XwordCell {
+    return this.state.cells[this.cellId(x, y)];
+  }
+  clueCells(cell_id: number, direction: string) {
+    var xincr = 0, yincr = 0;
+    if (direction === 'A') {
+      xincr = 1;
+    } else {
+      yincr = 1;
+    }
+    var [x, y] = this.cellPos(cell_id);
+    var cells = [];
+    for (var j = 0; y < this.state.height && x < this.state.width; j++) {
+      var cell = this.cellAt(x, y);
+      if (cell.isBlack())
+        break;
+      cells.push(this.cellId(x, y));
+      x += xincr; y += yincr;
+    }
+    return cells;
   }
   navRight() {
     var [x, y] = this.cellPos(this.state.activecell);
@@ -695,6 +689,8 @@ class XwordMain extends Component {
       case 0x2e:
         this.del();
         return true;
+      case 0xbe:
+        this.toggleBlank();
       default:
         return false;
     }
@@ -717,10 +713,14 @@ class XwordMain extends Component {
       e.preventDefault();
     }
   }
-  toggleBlank(i) {
-    // todo: split clue into two
-    // todo: fix of by one
-    // todo: gray unusable cells
+  toggleBlank() {
+    if (!this.state.construct)
+      return;
+
+    var i = this.state.activecell;
+    var dir = this.state.direction;
+    var clue = this.state.clues[this.state.cell_to_clue_table[i][dir == 'A' ? 0 : 1]];
+
     var [x,y] = this.cellPos(i);
     var cell = this.state.cells[i];
     var black = cell.isBlack();
@@ -734,14 +734,11 @@ class XwordMain extends Component {
     this.setState({cells: this.state.cells.slice()});
   }
   handleClick(i: number) {
-    this.toggleBlank(i);
-    /*
     if (this.state.activecell === i) {
       this.switchDir();
     } else {
       this.selectCell(i, this.state.direction);
     }
-    */
   }
   puzzleLoaded(url: string, puz: Object) {
     var grid = puz.grid;
@@ -892,6 +889,9 @@ class XwordMain extends Component {
   }
   highlightClue(clue: XwordClue, active: boolean)
   {
+    if (this.state.construct)
+      return;
+
     var cluenum = clue.get('index');
     var cind = this.state.clue_to_cell_table[cluenum];
     var [x, y] = this.cellPos(cind);
