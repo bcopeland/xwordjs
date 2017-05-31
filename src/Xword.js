@@ -310,6 +310,7 @@ class XwordMain extends Component {
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
+    this.serverUpdate = this.serverUpdate.bind(this);
   }
   loadServerPuzzle(id: string) {
     var self = this;
@@ -323,8 +324,10 @@ class XwordMain extends Component {
         var decoder = new TextDecoder('utf-8');
         var puz = new Xpf(decoder.decode(data));
         document.location.hash = id;
-        self.setState({solutionId: id});
+        self.setState({solutionId: id, server: server});
         self.puzzleLoaded(id, puz);
+        server.connect(id, self.serverUpdate);
+        server.sendSolution(id, -1, '');
       });
   }
   loadPuzzle(file: File, filename : ?string) {
@@ -836,6 +839,17 @@ class XwordMain extends Component {
     var newcells = this.state.cells.slice();
     this.setState({'cells': newcells});
   }
+  serverUpdate(json: Object) {
+    console.log("a server update happened...");
+    for (var i = 0; i < json.Grid.length; i++) {
+      var ch = json.Grid.charAt(i);
+      var cell = this.state.cells[i];
+      if (cell && !cell.isBlack() && !cell.get('modified')) {
+        cell.setState({entry: ch});
+      }
+    }
+    this.setState({version: json.Version});
+  }
   updateTimer(state: Object) {
     if (state.stopped)
       return;
@@ -851,25 +865,17 @@ class XwordMain extends Component {
       return;
 
     var fill = '';
+    var modified = false;
     for (var i=0; i < this.state.cells.length; i++) {
       var cell = this.state.cells[i];
       fill += cell.get('entry');
+      modified |= cell.get('modified');
       cell.setState({'modified': false});
     }
-
-    var self = this;
-    new Server({base_url: process.env.PUBLIC_URL})
-      .postSolution(this.state.solutionId, this.state.version, fill)
-      .then(function(json) {
-        for (var i = 0; i < json.Grid.length; i++) {
-          var ch = json.Grid.charAt(i);
-          var cell = self.state.cells[i];
-          if (cell && !cell.isBlack() && !cell.get('modified')) {
-            cell.setState({entry: ch});
-          }
-        }
-        self.setState({version: json.Version});
-      });
+    if (modified) {
+      this.state.server.sendSolution(this.state.solutionId,
+                                     this.state.version, fill);
+    }
   }
   componentDidMount() {
     var self = this;

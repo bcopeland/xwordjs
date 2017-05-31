@@ -1,7 +1,8 @@
 class Server {
 
   constructor(options) {
-    this.base_url = options.base_url || '';
+    this.base_url = options.base_url || 'http://localhost:4000';
+    this.ws = null;
   }
 
   getPuzzle(id: string) {
@@ -46,17 +47,29 @@ class Server {
     });
   }
 
-  postSolution(id: string, version: int, fill: string) {
-    var url = this.base_url + '/solution/' + id;
-    var postdata = {
+  sendSolution(id: string, version: int, fill: string) {
+    if (!this.ws)
+      return;
+    var msg = {
+      Id: id,
       Version: version,
       Grid: fill
     }
-    return fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(postdata)
-    }).then(function(response) {
-      return response.json()
+    var ws = this.ws;
+    if (ws.readyState === WebSocket.CONNECTING) {
+        ws.addEventListener('open', function (event) {
+        ws.send(JSON.stringify(msg));
+      }
+    } else if (ws.readyState == WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(msg));
+    }
+  }
+
+  connect(id: string, updateSolution: (msg:string) => void) {
+    this.ws = new WebSocket(this.base_url.replace("http", "ws") + "/ws");
+    this.ws.addEventListener('message', function (e) {
+      var msg = JSON.parse(e.data);
+      updateSolution(msg);
     });
   }
 }
