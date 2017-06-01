@@ -285,9 +285,10 @@ class XwordMain extends Component {
     direction: string,
     cell_to_clue_table: Array<Array<number>>,
     clue_to_cell_table: Array<number>,
-    version: 1,
-    solutionId: null,
-    dismissed_modal: boolean
+    version: number,
+    solutionId: ?string,
+    dismissed_modal: boolean,
+    server: ?Server
   };
   closeModal: Function;
   showAnswers: Function;
@@ -307,6 +308,9 @@ class XwordMain extends Component {
       'cell_to_clue_table': [],
       'clue_to_cell_table': [],
       'dismissed_modal': false,
+      'version': 1,
+      'solutionId': null,
+      'server': null,
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
@@ -347,6 +351,15 @@ class XwordMain extends Component {
           self.loadServerPuzzle(solutionId);
         });
     } else {
+      this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
+    }
+  }
+  loadPuzzleURL(url: string, filename : ?string) {
+    var self = this;
+    var request = new Request(url);
+    fetch(request).then(function(response) {
+      return response.arrayBuffer();
+    }).then(function(data) {
       var puz;
       var fn = filename || url;
       if (fn.endsWith("xd")) {
@@ -361,7 +374,7 @@ class XwordMain extends Component {
         puz = new Puz(data);
         self.puzzleLoaded(url, puz);
       }
-    }
+    });
   }
   cellPos(clue_id: number) {
     var y = Math.floor(clue_id / this.state.width);
@@ -872,10 +885,11 @@ class XwordMain extends Component {
     for (var i=0; i < this.state.cells.length; i++) {
       var cell = this.state.cells[i];
       fill += cell.get('entry');
-      modified |= cell.get('modified');
+      if (cell.get('modified'))
+        modified = true;
       cell.setState({'modified': false});
     }
-    if (modified) {
+    if (modified && this.state.server) {
       this.state.server.sendSolution(this.state.solutionId,
                                      this.state.version, fill);
     }
@@ -890,9 +904,9 @@ class XwordMain extends Component {
     }
     puzzle = window.location.search.substring(1);
     if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz)$/)) {
-      self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
+      self.loadPuzzleURL(process.env.PUBLIC_URL + puzzle);
     } else if (puzzle.match(/^http/)) {
-      self.loadPuzzle(puzzle);
+      self.loadPuzzleURL(puzzle);
     }
   }
   componentWillUnmount() {

@@ -59,7 +59,7 @@ class Server {
     if (ws.readyState === WebSocket.CONNECTING) {
         ws.addEventListener('open', function (event) {
         ws.send(JSON.stringify(msg));
-      }
+      });
     } else if (ws.readyState == WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
     }
