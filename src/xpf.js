@@ -66,6 +66,18 @@ function Xpf(data) {
           var answer = clue.getAttribute("Ans");
           this.clues.push([[direction, number], text, answer]);
         }
+        break;
+      case "Circles":
+        for (var j=0; j < node.children.length; j++) {
+          var circle = node.children[j];
+          var row = parseInt(circle.getAttribute("Row"), 10);
+          var col = parseInt(circle.getAttribute("Col"), 10);
+          if (row < 1 || row > this.height ||
+              col < 1 || col > this.width) {
+            continue;
+          }
+          this.flags[row-1][col-1] |= this.FLAGS.CIRCLED;
+        }
       }
     }
   }
