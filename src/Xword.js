@@ -79,7 +79,7 @@ class XwordCell {
     focus: boolean,
     circled: boolean,
     number: number,
-    modified: boolean,
+    version: number,
   };
 
   constructor(options) {
@@ -89,7 +89,7 @@ class XwordCell {
       active: false,
       focus: false,
       circled: false,
-      modified: false,
+      version: 0,
       number: 0,
     };
     Object.assign(this.state, options);
@@ -288,6 +288,7 @@ class XwordMain extends Component {
     version: number,
     solutionId: ?string,
     dismissed_modal: boolean,
+    modified: boolean,
     server: ?Server
   };
   closeModal: Function;
@@ -309,6 +310,7 @@ class XwordMain extends Component {
       'clue_to_cell_table': [],
       'dismissed_modal': false,
       'version': 1,
+      'modified': false,
       'solutionId': null,
       'server': null,
     }
@@ -522,18 +524,21 @@ class XwordMain extends Component {
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ch, 'modified': true});
+    cell.setState({'entry': ch, 'version': cell.get('version') + 1});
+    this.setState({modified: true})
     this.navNext();
   }
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ' ', 'modified': true});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+    this.setState({modified: true})
     this.selectCell(this.state.activecell, this.state.direction);
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'entry': ' ', 'modified': true});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+    this.setState({modified: true})
     this.navPrev();
   }
   isCorrect() {
@@ -757,6 +762,7 @@ class XwordMain extends Component {
     for (var i=0; i < entries.length; i++) {
       this.state.cells[i].setState({entry: entries[i]});
     }
+    this.setState({modified: true})
     this.state.timer.setState({elapsed: elapsed});
     this.setState({cells: this.state.cells, timer: this.state.timer});
   }
@@ -857,11 +863,13 @@ class XwordMain extends Component {
   }
   serverUpdate(json: Object) {
     console.log("a server update happened...");
-    for (var i = 0; i < json.Grid.length; i++) {
-      var ch = json.Grid.charAt(i);
+    for (var i = 0; i < json.Entries.length; i++) {
+      var ch = json.Entries[i].Value;
+      var version = json.Entries[i].Version;
+
       var cell = this.state.cells[i];
-      if (cell && !cell.isBlack() && !cell.get('modified')) {
-        cell.setState({entry: ch});
+      if (cell && !cell.isBlack() && version > cell.get('version')) {
+        cell.setState({entry: ch, version: version});
       }
     }
     this.setState({version: json.Version});
@@ -880,18 +888,15 @@ class XwordMain extends Component {
     if (!this.state.solutionId)
       return;
 
-    var fill = '';
-    var modified = false;
+    var entries = [];
     for (var i=0; i < this.state.cells.length; i++) {
       var cell = this.state.cells[i];
-      fill += cell.get('entry');
-      if (cell.get('modified'))
-        modified = true;
-      cell.setState({'modified': false});
+      entries.push({'Version': cell.get('version'), 'Value': cell.get('entry')});
     }
-    if (modified && this.state.server) {
+    if (this.state.modified) {
       this.state.server.sendSolution(this.state.solutionId,
-                                     this.state.version, fill);
+                                     this.state.version, entries);
+      this.setState({modified: false});
     }
   }
   componentDidMount() {

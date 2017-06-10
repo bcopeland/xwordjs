@@ -47,20 +47,22 @@ class Server {
     });
   }
 
-  sendSolution(id: string, version: int, fill: string) {
+  sendSolution(id: string, version: int, entries: Object) {
     if (!this.ws)
       return;
     var msg = {
       Id: id,
       Version: version,
-      Grid: fill
+      Entries: entries
     }
     var ws = this.ws;
     if (ws.readyState === WebSocket.CONNECTING) {
         ws.addEventListener('open', function (event) {
+        console.log("> " + JSON.stringify(msg));
         ws.send(JSON.stringify(msg));
       });
-    } else if (ws.readyState == WebSocket.OPEN) {
+    } else if (ws.readyState === WebSocket.OPEN) {
+      console.log("> " + JSON.stringify(msg));
       this.ws.send(JSON.stringify(msg));
     }
   }
@@ -68,6 +70,7 @@ class Server {
   connect(id: string, updateSolution: (msg:string) => void) {
     this.ws = new WebSocket(this.base_url.replace("http", "ws") + "/ws");
     this.ws.addEventListener('message', function (e) {
+      console.log("< " + e.data);
       var msg = JSON.parse(e.data);
       updateSolution(msg);
     });
