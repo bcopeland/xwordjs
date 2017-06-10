@@ -167,6 +167,11 @@
   font-size: 1.25em;
 }
 
+.xwordjs-text-box {
+  padding: 10px;
+  width: 50vw;
+}
+
 /* mobile settings */
 @media screen and (max-width:600px) {
   .xwordjs-cluelist-container {

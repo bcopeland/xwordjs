@@ -920,9 +920,41 @@ class XwordMain extends Component {
   }
   render() {
     if (this.state.cells.length === 0) {
+      if (window.location.search.length || window.location.hash.length) {
+        return (
+          <div className="XwordMain"/>
+        );
+      }
+      if (process.env.REACT_APP_HAS_SERVER) {
+         return (
+           <div className="XwordMain">
+             <div className="xwordjs-text-box">
+             <h1>Collaborative XwordJS</h1>
+
+             <p>
+             Upload a crossword puzzle here (.puz or .xpf format).
+             Once loaded, you can copy the random URL string and share with
+             someone else to play together.
+             </p>
+
+             <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
+             </div>
+           </div>
+         );
+      }
       return (
         <div className="XwordMain">
+          <div className="xwordjs-text-box">
+          <h1>XwordJS</h1>
+
+          <p>
+          Select a crossword puzzle here (.puz or .xpf format) and then
+          you can solve it in your browser.  The file will remain local
+          and not uploaded anywhere else.
+          </p>
+
           <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
+          </div>
         </div>
       );
     }
