@@ -33,6 +33,12 @@ function Xpf(data) {
     for (var i = 0; i < puz.children.length; i++) {
       var node = puz.children[i];
       switch (node.nodeName) {
+      case "Title":
+        this.headers.push(['Title', node.textContent]);
+        break;
+      case "Author":
+        this.headers.push(['Author', node.textContent]);
+        break;
       case "Size":
         for (var j = 0; j < node.children.length; j++) {
           var child = node.children[j];
@@ -59,6 +65,18 @@ function Xpf(data) {
           var number = parseInt(clue.getAttribute("Num"), 10);
           var answer = clue.getAttribute("Ans");
           this.clues.push([[direction, number], text, answer]);
+        }
+        break;
+      case "Circles":
+        for (var j=0; j < node.children.length; j++) {
+          var circle = node.children[j];
+          var row = parseInt(circle.getAttribute("Row"), 10);
+          var col = parseInt(circle.getAttribute("Col"), 10);
+          if (row < 1 || row > this.height ||
+              col < 1 || col > this.width) {
+            continue;
+          }
+          this.flags[row-1][col-1] |= this.FLAGS.CIRCLED;
         }
       }
     }

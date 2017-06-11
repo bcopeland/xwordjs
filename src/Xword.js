@@ -2,6 +2,7 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
+import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
 import './Xword.css';
 
@@ -78,6 +79,7 @@ class XwordCell {
     focus: boolean,
     circled: boolean,
     number: number,
+    version: number,
   };
 
   constructor(options) {
@@ -87,7 +89,8 @@ class XwordCell {
       active: false,
       focus: false,
       circled: false,
-      number: 0
+      version: 0,
+      number: 0,
     };
     Object.assign(this.state, options);
   }
@@ -282,7 +285,11 @@ class XwordMain extends Component {
     direction: string,
     cell_to_clue_table: Array<Array<number>>,
     clue_to_cell_table: Array<number>,
-    dismissed_modal: boolean
+    version: number,
+    solutionId: ?string,
+    dismissed_modal: boolean,
+    modified: boolean,
+    server: ?Server
   };
   closeModal: Function;
   showAnswers: Function;
@@ -302,11 +309,54 @@ class XwordMain extends Component {
       'cell_to_clue_table': [],
       'clue_to_cell_table': [],
       'dismissed_modal': false,
+      'version': 1,
+      'modified': false,
+      'solutionId': null,
+      'server': null,
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
+    this.serverUpdate = this.serverUpdate.bind(this);
   }
-  loadPuzzle(url: string, filename : ?string) {
+  loadServerPuzzle(id: string) {
+    if (!process.env.REACT_APP_HAS_SERVER)
+      return;
+
+    var self = this;
+    var server = new Server({base_url: process.env.PUBLIC_URL})
+    server
+      .getSolution(id)
+      .then(function(obj) {
+        return server.getPuzzle(obj.PuzzleId)
+      })
+      .then(function(data) {
+        var decoder = new TextDecoder('utf-8');
+        var puz = new Xpf(decoder.decode(data));
+        document.location.hash = id;
+        self.setState({solutionId: id, server: server});
+        self.puzzleLoaded(id, puz);
+        server.connect(id, self.serverUpdate);
+        server.sendSolution(id, -1, '');
+      });
+  }
+  loadPuzzle(file: File, filename : ?string) {
+    var self = this;
+    if (process.env.REACT_APP_HAS_SERVER) {
+      var server = new Server({base_url: process.env.PUBLIC_URL})
+      server.uploadPuzzle(file)
+        .then(function(obj) {
+          var id = obj.Id;
+          return server.startSolution(id);
+        })
+        .then(function(obj) {
+          var solutionId = obj.Id;
+          self.loadServerPuzzle(solutionId);
+        });
+    } else {
+      this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
+    }
+  }
+  loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
     var request = new Request(url);
     fetch(request).then(function(response) {
@@ -318,7 +368,7 @@ class XwordMain extends Component {
         var decoder = new TextDecoder('utf-8');
         puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
-      } else if (fn.endsWith("xml")) {
+      } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
         puz = new Xpf(decoder.decode(data));
         self.puzzleLoaded(url, puz);
@@ -334,7 +384,6 @@ class XwordMain extends Component {
     return [x, y];
   }
   navRight() {
-    console.log("navright");
     var [x, y] = this.cellPos(this.state.activecell);
     while (x < this.state.width) {
       x += 1;
@@ -349,7 +398,6 @@ class XwordMain extends Component {
     this.selectCell(activecell, this.state.direction);
   }
   navLeft() {
-    console.log("navleft");
     var [x, y] = this.cellPos(this.state.activecell);
     while (x >= 0) {
       x -= 1;
@@ -364,7 +412,6 @@ class XwordMain extends Component {
     this.selectCell(activecell, this.state.direction);
   }
   navUp() {
-    console.log("navup");
     var [x, y] = this.cellPos(this.state.activecell);
     while (y >= 0) {
       y -= 1;
@@ -378,7 +425,6 @@ class XwordMain extends Component {
     this.selectCell(activecell, this.state.direction);
   }
   navDown() {
-    console.log("navdown");
     var [x, y] = this.cellPos(this.state.activecell);
     while (y < this.state.height) {
       y += 1;
@@ -478,18 +524,21 @@ class XwordMain extends Component {
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ch});
+    cell.setState({'entry': ch, 'version': cell.get('version') + 1});
+    this.setState({modified: true})
     this.navNext();
   }
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ' '});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+    this.setState({modified: true})
     this.selectCell(this.state.activecell, this.state.direction);
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'entry': ' '});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+    this.setState({modified: true})
     this.navPrev();
   }
   isCorrect() {
@@ -546,6 +595,9 @@ class XwordMain extends Component {
     }
   }
   handleKeyDown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.altKey)
+      return;
+
     if (this.state.direction === 'A' && (e.keyCode === 0x26 || e.keyCode === 0x28)) {
       this.selectCell(this.state.activecell, 'D');
       e.preventDefault();
@@ -690,20 +742,27 @@ class XwordMain extends Component {
       return;
     localStorage.setItem(key, JSON.stringify(data));
   }
-  loadStoredData()
+  readStoredData()
   {
     var key = this.state.cells.map((x) => x.state.fill).join("");
     var data = localStorage.getItem(key);
     if (!data)
-      return;
+      return null;
 
-    data = JSON.parse(data);
+    return JSON.parse(data);
+  }
+  loadStoredData()
+  {
+    var data = this.readStoredData()
+    if (!data)
+      return;
 
     var entries = data.entries;
     var elapsed = data.elapsed;
     for (var i=0; i < entries.length; i++) {
       this.state.cells[i].setState({entry: entries[i]});
     }
+    this.setState({modified: true})
     this.state.timer.setState({elapsed: elapsed});
     this.setState({cells: this.state.cells, timer: this.state.timer});
   }
@@ -802,6 +861,19 @@ class XwordMain extends Component {
     var newcells = this.state.cells.slice();
     this.setState({'cells': newcells});
   }
+  serverUpdate(json: Object) {
+    console.log("a server update happened...");
+    for (var i = 0; i < json.Entries.length; i++) {
+      var ch = json.Entries[i].Value;
+      var version = json.Entries[i].Version;
+
+      var cell = this.state.cells[i];
+      if (cell && !cell.isBlack() && version > cell.get('version')) {
+        cell.setState({entry: ch, version: version});
+      }
+    }
+    this.setState({version: json.Version});
+  }
   updateTimer(state: Object) {
     if (state.stopped)
       return;
@@ -812,16 +884,34 @@ class XwordMain extends Component {
     this.saveStoredData();
     this.state.timer.setState(state);
     this.setState({'timer': this.state.timer});
+
+    if (!this.state.solutionId)
+      return;
+
+    var entries = [];
+    for (var i=0; i < this.state.cells.length; i++) {
+      var cell = this.state.cells[i];
+      entries.push({'Version': cell.get('version'), 'Value': cell.get('entry')});
+    }
+    if (this.state.modified) {
+      this.state.server.sendSolution(this.state.solutionId,
+                                     this.state.version, entries);
+      this.setState({modified: false});
+    }
   }
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
-
-    var puzzle = window.location.search.substring(1);
+    var puzzle = window.location.hash.substring(1);
+    if (puzzle) {
+      self.loadServerPuzzle(puzzle);
+      return;
+    }
+    puzzle = window.location.search.substring(1);
     if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz)$/)) {
-      self.loadPuzzle(process.env.PUBLIC_URL + puzzle);
+      self.loadPuzzleURL(process.env.PUBLIC_URL + puzzle);
     } else if (puzzle.match(/^http/)) {
-      self.loadPuzzle(puzzle);
+      self.loadPuzzleURL(puzzle);
     }
   }
   componentWillUnmount() {
@@ -830,9 +920,41 @@ class XwordMain extends Component {
   }
   render() {
     if (this.state.cells.length === 0) {
+      if (window.location.search.length || window.location.hash.length) {
+        return (
+          <div className="XwordMain"/>
+        );
+      }
+      if (process.env.REACT_APP_HAS_SERVER) {
+         return (
+           <div className="XwordMain">
+             <div className="xwordjs-text-box">
+             <h1>Collaborative XwordJS</h1>
+
+             <p>
+             Upload a crossword puzzle here (.puz or .xpf format).
+             Once loaded, you can copy the random URL string and share with
+             someone else to play together.
+             </p>
+
+             <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
+             </div>
+           </div>
+         );
+      }
       return (
         <div className="XwordMain">
+          <div className="xwordjs-text-box">
+          <h1>XwordJS</h1>
+
+          <p>
+          Select a crossword puzzle here (.puz or .xpf format) and then
+          you can solve it in your browser.  The file will remain local
+          and not uploaded anywhere else.
+          </p>
+
           <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
+          </div>
         </div>
       );
     }
