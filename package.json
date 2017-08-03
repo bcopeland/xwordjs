@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
+    "babel-preset-flow": "^6.23.0",
     "react-scripts": "0.8.4"
   },
   "dependencies": {

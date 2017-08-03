@@ -58,7 +58,8 @@ function Xd(data) {
         var flags = Array(line.length).fill(0);
         for (var j=0; j < line.length; j++) {
           var ch = line.charAt(j);
-          if (ch !== '#' && ch === ch.toLowerCase()) {
+          // lowercase -> circled
+          if (ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) <= 122) {
             flags[j] |= self.FLAGS.CIRCLED;
           }
         }

@@ -80,7 +80,12 @@
   background-color: #a0ffa0;
 }
 
-.xwordjs-cluelist-container {
+.xwordjs-cell-focus-black {
+  background-color: #a0a0a0;
+}
+
+
+.xwordjs-fill-list-container {
   display: flex;
   height: 550px;
   border: 1px;
@@ -88,12 +93,12 @@
   margin: 10px;
 }
 
-.xwordjs-cluelist-container h3 {
+.xwordjs-fill-list-container h3 {
   text-align: center;
   margin: 10px;
 }
 
-.xwordjs-cluelist {
+.xwordjs-fill-list {
   height: 100%;
   width: 250px;
   overflow-y: scroll;
@@ -102,11 +107,11 @@
   margin-left: 10px;
 }
 
-.xwordjs-clue-active {
+.xwordjs-fill-active {
   background-color: #00ff00
 }
 
-.xwordjs-clue-cross-active {
+.xwordjs-fill-cross-active {
   background-color: #7fb77f
 }
 
@@ -178,10 +183,10 @@
 
 /* mobile settings */
 @media screen and (max-width:600px) {
-  .xwordjs-cluelist-container {
+  .xwordjs-fill-list-container {
     display: none;
   }
-  .xwordjs-cluelist {
+  .xwordjs-fill-list {
     display: none;
   }
   .xwordjs-cell {

@@ -3,42 +3,22 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
-import {TimerState, Timer} from './Timer.js';
 import './Xword.css';
 
-// TODO
-//  . usability
-//  . styling
-//   . timer
-//    . center over puzzle?
-//    . smaller top/bottom margins
-//   . title
-//   . colors
-//  . polish
-//   . clue resize to grid height
-//   . shift-tab focus last letter
-//   . scrollIntoViewIfNeeded(centered) - polyfill
-//   . scroll sideways annoying
-//  . reveal letter
-//  . reveal clue
-//  . show errors
-//  . phone interface
-//   . clue only entry
-//  . restyle input selection
-//  . solve stats (by day)
-//  . creation app using same components as solver app
-//  . dictionary loader
-//  . javacsript filler
-//  . fill statistics - scrabble score etc
-//  . file drop
-//  . file extension from choose file doesn't work
-//  'A' => 0, 'D' => 1 constants
-//  . don't take over ctrl-l
-//  . border on clues
-//  . initial clue selection if 0 is black
+// . webworker impl
+// . committed / uncommitted letters
+// . test fill
+// . menu
+// . export as xd/puz/pdf
+// . fill specific entry
+//   . don't fill the score!
+// . hint entry
+// . difficulty grade
+// . undo/redo
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
+var Filler = require("./fill.js");
 
 class XwordClue {
   state: {
@@ -121,64 +101,25 @@ function Title(props) {
   );
 }
 
-function ClueBar(props) {
-  var text = '';
-  for (var i=0; i < props.value.length; i++) {
-    var clue = props.value[i];
-    if (clue.get('active')) {
-      text = clue.get('number') + ". " + clue.get('clue');
-    }
+function FillItem(props) {
+  var without_score = props.value;
+  if (without_score.indexOf(" ") > 0) {
+    without_score = props.value.substr(0, without_score.indexOf(" "));
   }
-  return <div className={"xwordjs-clue-bar"}>{text}</div>;
-}
-
-function Clue(props) {
-  var clue = props.value;
-  var contents = clue.get('number') + ". " + clue.get('clue');
-  var extraClass = "";
-
-  if (clue.get('active'))
-    extraClass = " xwordjs-clue-active";
-  else if (clue.get('crossActive'))
-    extraClass = " xwordjs-clue-cross-active";
-
   return (
-    <div className={"xwordjs-clue" + extraClass} id={"clue_" + clue.get('index')} onClick={() => props.onClick(clue)}>{contents}</div>
+    <div className={"xwordjs-fill"} onClick={() => props.onClick(without_score)}>{props.value}</div>
   );
 }
 
-function Cluelist(props) {
-  var list = [];
+function FillList(props) {
+
+  var items = [];
   for (var i=0; i < props.value.length; i++) {
-    var clue = props.value[i];
-    list.push(<Clue key={"clue_" + i} onClick={(x) => props.selectClue(x)} value={clue}/>);
+    items.push(<FillItem key={"item" + i} value={props.value[i]} onClick={(x) => props.fillEntry(x)}/>);
   }
   return (
-    <div>
-    <h3>{props.title}</h3>
-    <div className="xwordjs-cluelist">
-    {list}
-    </div>
-    </div>
-  );
-}
-
-function Clues(props) {
-  var across = [];
-  var down = [];
-  for (var i=0; i < props.value.length; i++) {
-    var clue = props.value[i];
-
-    if (clue.get('direction') === 'A') {
-      across.push(props.value[i]);
-    } else {
-      down.push(props.value[i]);
-    }
-  }
-  return(
-    <div id="xwordjs-cluelist-container" className="xwordjs-cluelist-container">
-      <Cluelist selectClue={props.selectClue} value={across} title="Across"/>
-      <Cluelist selectClue={props.selectClue} value={down} title="Down"/>
+    <div id="xwordjs-fill-list-container" className="xwordjs-fill-list-container">
+      <div className="xwordjs-fill-list">{items}</div>
     </div>
   );
 }
@@ -248,19 +189,22 @@ function MobileKeyboard(props) {
 
 function Cell(props) {
   var classname="xwordjs-cell";
-  if (props.isBlack) {
-    classname += " xwordjs-cell-black";
-  }
   if (props.isTop) {
     classname += " xwordjs-cell-top";
   }
   if (props.isLeft) {
     classname += " xwordjs-cell-left";
   }
-  if (props.isFocus) {
-    classname += " xwordjs-cell-focus";
-  } else if (props.isActive) {
+  if (props.isActive) {
     classname += " xwordjs-cell-active";
+  }
+  if (props.isFocus) {
+    if (props.isBlack)
+      classname += " xwordjs-cell-focus-black";
+    else
+      classname += " xwordjs-cell-focus";
+  } else if (props.isBlack) {
+    classname += " xwordjs-cell-black";
   }
   var circleclass = "";
   if (props.isCircled) {
@@ -281,23 +225,25 @@ class XwordMain extends Component {
     height: number,
     width: number,
     cells: Array<XwordCell>,
-    clues: Array<XwordClue>,
     title: string,
     author: string,
-    timer: TimerState,
     activecell: number,
     direction: string,
-    cell_to_clue_table: Array<Array<number>>,
-    clue_to_cell_table: Array<number>,
     construct: boolean,
     version: number,
     solutionId: ?string,
     dismissed_modal: boolean,
     modified: boolean,
-    server: ?Server
+    fills: Array<string>,
+    numFills: number,
+    server: ?Server,
+    wordlist: ?Filler.wordlist
   };
   closeModal: Function;
   showAnswers: Function;
+  serverUpdate: Function;
+  fill: Function;
+  fillEntry: Function;
 
   constructor() {
     super();
@@ -305,23 +251,27 @@ class XwordMain extends Component {
       'height': 15,
       'width': 15,
       'cells': [],
-      'clues': [],
       'title': '',
       'author': '',
-      'timer': new TimerState(),
       'activecell': 0,
       'direction': 'A',
       'cell_to_clue_table': [],
       'clue_to_cell_table': [],
       'dismissed_modal': false,
+      wordlist: null,
       modified: false,
       version: 1,
+      fills: [],
+      numFills: 0,
       construct: false,
-      solutionId: null
+      solutionId: null,
+      server: null
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
     this.serverUpdate = this.serverUpdate.bind(this);
+    this.fill = this.fill.bind(this);
+    this.fillEntry = this.fillEntry.bind(this);
   }
   loadServerPuzzle(id: string) {
     if (!process.env.REACT_APP_HAS_SERVER)
@@ -361,75 +311,103 @@ class XwordMain extends Component {
       this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
     }
   }
-  rebuildEntries() {
-    var across_clues = [];
-    var down_clues = [];
-    var across_clue_to_cell_table = [];
-    var down_clue_to_cell_table = [];
-    var cell_to_clue_table = [];
-    var i = 0;
-    var clue;
-    for (var y = 0; y < this.state.width; y++) {
-      for (var x = 0; x < this.state.height; x++) {
-        var is_black = this.cellAt(x, y).isBlack();
-        var start_of_xslot = (!is_black &&
-                              (x === 0 || this.cellAt(x-1, y).isBlack()) &&
-                              (x + 1 < this.state.width && !this.cellAt(x+1, y).isBlack()));
-        var start_of_yslot = (!is_black &&
-                              (y === 0 || this.cellAt(x, y-1).isBlack()) &&
-                              (y + 1 < this.state.height && !this.cellAt(x, y+1).isBlack()));
-
-        if (start_of_xslot) {
-          clue = new XwordClue({
-            'index': i, 'direction': 'A', 'number': i+1, 'clue': 'Clue',
-            'answer': '?'});
-          across_clues.push(clue);
-          across_clue_to_cell_table.push(this.cellId(x, y));
-          i++;
-        }
-        if (start_of_yslot) {
-          clue = new XwordClue({
-            'index': i, 'direction': 'D', 'number': i+1, 'clue': 'Clue',
-            'answer': '?'});
-          down_clues.push(clue);
-          down_clue_to_cell_table.push(this.cellId(x, y));
-        }
-        cell_to_clue_table.push([0, 0]);
-        i++;
-      }
-    }
-    var clues = across_clues.concat(down_clues);
-    var clue_to_cell_table = across_clue_to_cell_table.concat(down_clue_to_cell_table);
-    for (var i=0; i < clues.length; i++) {
-      clues[i].setState({index: i});
-      var cell_id = clue_to_cell_table[i];
-      var clue_cells = this.clueCells(cell_id, clues[i].get('direction'));
-      for (var j=0; j < clue_cells.length; j++) {
-        cell_id = clue_cells[j];
-        var dir = clues[i].get('direction');
-        cell_to_clue_table[cell_id][dir == 'A' ? 0 : 1] = i;
-      }
-    }
-    this.setState({cell_to_clue_table: cell_to_clue_table,
-                   clues: clues,
-                   clue_to_cell_table: clue_to_cell_table});
-  }
-  newPuzzle() {
-    var maxx = 15;
-    var maxy = 15;
+  newPuzzle(width : number, length: number) {
+    var maxx = width;
+    var maxy = length;
     var cells = new Array(maxx * maxy);
     for (var i=0; i < maxx * maxy; i++) {
       cells[i] = new XwordCell();
     }
 
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = "" + (now.getMonth() + 1);
+    if (month.length < 2) {
+      month = "0" + month;
+    }
+    var day = "" + now.getDay();
+    if (day.length < 2) {
+      day = "0" + day;
+    }
+
+    var datestr = year + "-" + month + "-" + day;
+    var title = 'Untitled - ' + datestr;
+
     this.setState({
-      'title': 'untitled', 'author': 'unknown',
-      'width': maxx, 'height': maxy, 'cells': cells, 'clues': [],
-      'clue_to_cell_table': [],
-      'cell_to_clue_table': [],
+      'title': title, 'author': 'unknown',
+      'width': maxx, 'height': maxy, 'cells': cells,
       construct: true
     });
-    this.rebuildEntries();
+    this.resizeScrollPane();
+  }
+  loadWordlist() {
+    var self = this;
+
+    // $FlowFixMe
+    var url = process.env.PUBLIC_URL + "XwiWordList.txt";
+    var request = new Request(url);
+    fetch(request).then(function(response) {
+      return response.arrayBuffer();
+    }).then(function(data) {
+      // $FlowFixMe
+      var text = new TextDecoder('utf-8').decode(data);
+      self.setState({wordlist: new Filler.wordlist(text.trim().split("\n"))});
+    });
+  }
+  getFillerString() : string {
+    var grid = '';
+    for (var i = 0; i < this.state.cells.length; i++) {
+      var ch = this.state.cells[i].get('entry');
+      if (this.state.cells[i].isBlack())
+        ch = '#';
+      else if (ch === ' ')
+        ch = '.';
+      grid += ch;
+      if ((i + 1) % this.state.width == 0)
+        grid += "\n";
+    }
+    return grid;
+  }
+  updateFills() {
+    var [x, y] = this.cellPos(this.state.activecell);
+    var dir = this.state.direction === 'A' ? 0 : 1;
+
+    var grid = this.getFillerString();
+
+    if (!this.state.wordlist)
+      return;
+
+    var filler = new Filler.filler(grid, this.state.wordlist);
+    var result = filler.getFills(x, y, dir);
+    var numFills = filler.estimatedFills();
+
+    if (!this.state.wordlist)
+      return;
+
+    var withscores = [];
+    for (var i=0; i < result.length; i++) {
+      withscores.push(result[i] + " [" + this.state.wordlist.score(result[i]) + "]");
+    }
+    this.setState({fills: withscores, numFills: numFills});
+  }
+  fill() {
+    var grid = this.getFillerString();
+
+    if (!this.state.wordlist)
+      return;
+
+    var result = new Filler.filler(grid, this.state.wordlist).fill();
+    var rows = result.trim().split("\n");
+    for (var i = 0; i < rows.length; i++) {
+      for (var j = 0; j < rows[i].length; j++) {
+        var cell_id = this.state.height * i + j;
+        var entry = rows[i].charAt(j);
+        if (entry === '#' || entry === '.')
+          continue;
+        this.state.cells[cell_id].setState({entry: entry});
+      }
+    }
+    this.setState({'cells': this.state.cells.slice()});
   }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
@@ -441,10 +419,12 @@ class XwordMain extends Component {
       var fn = filename || url;
       if (fn.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
+        // $FlowFixMe decode handles ArrayBuffer too
         puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
+        // $FlowFixMe decode handles ArrayBuffer too
         puz = new Xpf(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
@@ -484,11 +464,8 @@ class XwordMain extends Component {
   }
   navRight() {
     var [x, y] = this.cellPos(this.state.activecell);
-    while (x < this.state.width) {
+    if (x < this.state.width) {
       x += 1;
-      if (x < this.state.width &&
-          this.state.cells[y * this.state.width + x].get('fill') !== '#')
-        break;
     }
     if (x === this.state.width)
       return;
@@ -498,11 +475,8 @@ class XwordMain extends Component {
   }
   navLeft() {
     var [x, y] = this.cellPos(this.state.activecell);
-    while (x >= 0) {
+    if (x >= 0) {
       x -= 1;
-      if (x >= 0 &&
-          this.state.cells[y * this.state.width + x].get('fill') !== '#')
-        break;
     }
     if (x < 0)
       return;
@@ -512,11 +486,8 @@ class XwordMain extends Component {
   }
   navUp() {
     var [x, y] = this.cellPos(this.state.activecell);
-    while (y >= 0) {
+    if (y >= 0) {
       y -= 1;
-      if (y >= 0 &&
-          this.state.cells[y * this.state.width + x].get('fill') !== '#')
-        break;
     }
     if (y < 0)
       return;
@@ -525,11 +496,8 @@ class XwordMain extends Component {
   }
   navDown() {
     var [x, y] = this.cellPos(this.state.activecell);
-    while (y < this.state.height) {
+    if (y < this.state.height) {
       y += 1;
-      if (y < this.state.height &&
-          this.state.cells[y * this.state.width + x].get('fill') !== '#')
-        break;
     }
     if (y === this.state.height)
       return;
@@ -540,78 +508,39 @@ class XwordMain extends Component {
   navNextClue() {
     var dind = (this.state.direction === 'A') ? 0 : 1;
     var cur_cell_id = this.state.activecell;
-    var clue_id = this.state.cell_to_clue_table[cur_cell_id][dind];
-    var next_clue_id = (clue_id + 1) % this.state.clues.length;
-    this.selectClue(this.state.clues[next_clue_id]);
   }
   navPrevClue() {
     var dind = (this.state.direction === 'A') ? 0 : 1;
     var cur_cell_id = this.state.activecell;
-    var clue_id = this.state.cell_to_clue_table[cur_cell_id][dind];
-    var next_clue_id = (clue_id - 1) % this.state.clues.length;
-    this.selectClue(this.state.clues[next_clue_id]);
   }
   navNext() {
     var dind = (this.state.direction === 'A') ? 0 : 1;
     var cur_cell_id = this.state.activecell;
-    var clue_id = this.state.cell_to_clue_table[cur_cell_id][dind];
-    var start_cell_id = this.state.clue_to_cell_table[clue_id];
-    var clue = this.state.clues[clue_id];
 
     var [x, y] = this.cellPos(cur_cell_id);
-    var [start_x, start_y] = this.cellPos(start_cell_id);
-    var alen = clue.get('answer').length;
+    if (this.state.direction === 'A')
+      x += 1;
+    else
+      y += 1;
 
-    for (var i = 0; i < alen; i++) {
-      if (this.state.direction === 'A')
-        x += 1;
-      else
-        y += 1;
-      if (x >= start_x + alen)
-        x = start_x;
-      if (y >= start_y + alen)
-        y = start_y;
+    if (x >= this.state.width || y >= this.state.height)
+      return;
 
-      var cell = this.state.cells[y * this.state.width + x];
-      if (cell.get('entry') === ' ')
-        break;
-    }
-    if (i === alen) {
-      // no empty square.
-      [x, y] = this.cellPos(cur_cell_id);
-
-      // if end of word, go to next word
-      if ((this.state.direction === 'A' && x === start_x + alen - 1) ||
-          (this.state.direction === 'D' && y === start_y + alen - 1)) {
-        this.navNextClue();
-        return;
-      }
-
-      if (this.state.direction === 'A')
-        x += 1;
-      else
-        y += 1;
-    }
     var activecell = y * this.state.width + x;
     this.selectCell(activecell, this.state.direction);
   }
   navPrev() {
     var dind = (this.state.direction === 'A') ? 0 : 1;
     var cur_cell_id = this.state.activecell;
-    var clue_id = this.state.cell_to_clue_table[cur_cell_id][dind];
-    var start_cell_id = this.state.clue_to_cell_table[clue_id];
 
     var [x, y] = this.cellPos(cur_cell_id);
-    var [start_x, start_y] = this.cellPos(start_cell_id);
-
     if (this.state.direction === 'A')
       x -= 1;
     else
       y -= 1;
-    if (x < start_x)
-      x = start_x;
-    if (y < start_y)
-      y = start_y;
+
+    if (x < 0 || y < 0)
+      return;
 
     var activecell = y * this.state.width + x;
     this.selectCell(activecell, this.state.direction);
@@ -625,6 +554,7 @@ class XwordMain extends Component {
 
     cell.setState({'entry': ch, 'version': cell.get('version') + 1});
     this.setState({modified: true})
+    this.saveStoredData();
     this.navNext();
   }
   del() {
@@ -719,7 +649,6 @@ class XwordMain extends Component {
 
     var i = this.state.activecell;
     var dir = this.state.direction;
-    var clue = this.state.clues[this.state.cell_to_clue_table[i][dir == 'A' ? 0 : 1]];
 
     var [x,y] = this.cellPos(i);
     var cell = this.state.cells[i];
@@ -782,8 +711,13 @@ class XwordMain extends Component {
         if (flags) {
           circled = !!(flags[y][x] & puz.FLAGS.CIRCLED);
         }
+        var entry = fill;
+        if (fill === '.' || fill === '#')
+          entry = ' ';
+
         cells[y * maxx + x] = new XwordCell({
           'fill': fill,
+          'entry': entry,
           'number': number,
           'active': false,
           'circled': circled
@@ -829,23 +763,24 @@ class XwordMain extends Component {
     }
     this.setState({
       'title': title, 'author': author,
-      'width': maxx, 'height': maxy, 'cells': cells, 'clues': clues,
-      'clue_to_cell_table': clue_to_cell_table,
-      'cell_to_clue_table': cell_to_clue_table
+      'width': maxx, 'height': maxy, 'cells': cells
     });
     this.loadStoredData();
     this.selectCell(0, 'A', true);
-
+    this.resizeScrollPane();
+  }
+  resizeScrollPane()
+  {
     // set cluelist to match grid height
     var gridelem = document.getElementById("xwordjs-grid-inner");
-    var cluediv = document.getElementById("xwordjs-cluelist-container");
-    var cluelist = document.getElementsByClassName("xwordjs-cluelist");
+    var cluediv = document.getElementById("xwordjs-fill-list-container");
+    var cluelist = document.getElementsByClassName("xwordjs-fill-list");
     var gridHeight = window.getComputedStyle(gridelem).getPropertyValue("height");
 
     if (cluediv)
       cluediv.style.height = gridHeight;
 
-    for (i = 0; i < cluelist.length; i++) {
+    for (var i = 0; i < cluelist.length; i++) {
         var e = cluelist[i];
         var newheight = String(parseInt(gridHeight, 10) - 60) + "px";
         e.style.height = newheight;
@@ -853,19 +788,17 @@ class XwordMain extends Component {
   }
   saveStoredData()
   {
-    var key = this.state.cells.map((x) => x.state.fill).join("");
+    var key = this.state.title;
+    console.log("saving data: " + key);
     var data = {
       entries: this.state.cells.map((x) => x.state.entry),
-      elapsed: this.state.timer.get('elapsed')
     };
-    // avoid a race condition when first starting up
-    if (!data.elapsed)
-      return;
     localStorage.setItem(key, JSON.stringify(data));
   }
   readStoredData()
   {
-    var key = this.state.cells.map((x) => x.state.fill).join("");
+    var key = this.state.title;
+    console.log("loading data: " + key);
     var data = localStorage.getItem(key);
     if (!data)
       return null;
@@ -884,93 +817,70 @@ class XwordMain extends Component {
       this.state.cells[i].setState({entry: entries[i]});
     }
     this.setState({modified: true})
-    this.state.timer.setState({elapsed: elapsed});
-    this.setState({cells: this.state.cells, timer: this.state.timer});
+    this.setState({cells: this.state.cells});
   }
-  highlightClue(clue: XwordClue, active: boolean)
+  rewindToStart(x: number, y: number, direction: number)
   {
-    if (this.state.construct)
+    var x_incr = (direction === 0) ? 1 : 0;
+    var y_incr = (x_incr) ? 0 : 1;
+    for (; y >= 0 && x >= 0; x -= x_incr, y -= y_incr) {
+      var cell = this.state.cells[this.state.width * y + x];
+      if (cell.isBlack()) {
+        x += x_incr; y += y_incr;
+        break;
+      }
+    }
+    if (x < 0)
+      x = 0;
+    if (y < 0)
+      y = 0;
+    return [x, y];
+  }
+  highlight(x: number, y: number, direction: number, active: boolean)
+  {
+    var x_incr = (direction === 0) ? 1 : 0;
+    var y_incr = (x_incr) ? 0 : 1;
+
+    var cell = this.state.cells[this.state.width * y + x];
+    if (cell.isBlack())
       return;
 
-    var cluenum = clue.get('index');
-    var cind = this.state.clue_to_cell_table[cluenum];
-    var [x, y] = this.cellPos(cind);
+    // rewind to start of entry
+    [x, y] = this.rewindToStart(x, y, direction);
 
-    var x_incr = clue.get('direction') === 'A' ? 1 : 0;
-    var y_incr = !x_incr;
-
-    for (; x < this.state.width && y < this.state.height; ) {
-      var cell = this.state.cells[this.state.width * y + x];
-      if (cell.isBlack())
+    for (; y < this.state.height && x < this.state.width; x += x_incr, y += y_incr) {
+      cell = this.state.cells[this.state.width * y + x];
+      if (active && cell.isBlack())
         break;
 
       cell.setState({"active": active});
-      x += x_incr;
-      y += y_incr;
     }
   }
   selectCell(cell_id: number, direction: string, initial: ?boolean)
   {
     var cell = this.state.cells[cell_id];
 
-    if (cell.isBlack())
-      return;
-
-    var newclues = this.state.clues.slice();
     var newcells = this.state.cells.slice();
 
     // unselect existing selected cell and crosses
     var oldcell_id = this.state.activecell;
     var old_dind = (this.state.direction === 'A') ? 0 : 1;
-    var oldclue = this.state.clues[this.state.cell_to_clue_table[oldcell_id][old_dind]];
-    var oldcross = this.state.clues[this.state.cell_to_clue_table[oldcell_id][1 - old_dind]];
+    var [old_x, old_y] = this.cellPos(oldcell_id);
+
     var oldcell = this.state.cells[oldcell_id];
-
     var dind = (direction === 'A') ? 0 : 1;
-    var clue = this.state.clues[this.state.cell_to_clue_table[cell_id][dind]];
-    var cross = this.state.clues[this.state.cell_to_clue_table[cell_id][1 - dind]];
+    var [x, y] = this.cellPos(cell_id);
 
-    var e;
+    this.state.cells.forEach(function(c) {
+      c.setState({active: false});
+    });
+    this.highlight(x, y, dind, true);
 
-    if (initial || oldcross !== cross) {
-      if (oldcross)
-        oldcross.setState({"crossActive": false});
-      if (cross) {
-        cross.setState({"crossActive": true});
-        e = document.getElementById("clue_" + cross.get('index'));
-        if (e)
-          e.scrollIntoView();
-      }
-    }
+    oldcell.setState({focus: false});
+    cell.setState({focus: true});
 
-    if (initial || oldclue !== clue) {
-
-      if (oldclue) {
-        oldclue.setState({"active": false});
-        this.highlightClue(oldclue, false);
-      }
-      if (clue) {
-        clue.setState({"active": true});
-        this.highlightClue(clue, true);
-        e = document.getElementById("clue_" + clue.get('index'));
-        if (e)
-          e.scrollIntoView();
-      }
-    }
-
-    if (initial || oldcell_id !== cell_id) {
-      oldcell.setState({focus: false});
-      cell.setState({focus: true});
-    }
-    this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction});
-  }
-  selectClue(clue: XwordClue)
-  {
-    var cluenum = clue.get('index');
-
-    // set first cell in this clue as active
-    var cell = this.state.clue_to_cell_table[cluenum];
-    this.selectCell(cell, clue.get('direction'));
+    this.setState({'cells': newcells, 'activecell': cell_id, 'direction': direction});
+    this.updateFills();
   }
   closeModal() {
     this.setState({'dismissed_modal': true});
@@ -998,47 +908,24 @@ class XwordMain extends Component {
     }
     this.setState({version: json.Version});
   }
-  updateTimer(state: Object) {
-    if (state.stopped)
-      return;
+  fillEntry(value: string) {
+    var pos = this.cellPos(this.state.activecell);
+    var [x, y] = this.rewindToStart(pos[0], pos[1], this.state.direction === 'A' ? 0 : 1);
+    var x_incr = this.state.direction === 'A' ? 1 : 0;
+    var y_incr = (x_incr) ? 0 : 1;
 
-    if (this.isCorrect()) {
-      state.stopped = true;
+    for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
+      var cell_id = y * this.state.width + x;
+      this.state.cells[cell_id].setState({entry: value[i]});
     }
+    var newcells = this.state.cells.slice();
+    this.setState({'cells': newcells});
     this.saveStoredData();
-    this.state.timer.setState(state);
-    this.setState({'timer': this.state.timer});
-
-    if (!this.state.solutionId)
-      return;
-
-    var entries = [];
-    for (var i=0; i < this.state.cells.length; i++) {
-      var cell = this.state.cells[i];
-      entries.push({'Version': cell.get('version'), 'Value': cell.get('entry')});
-    }
-    if (this.state.modified) {
-      this.state.server.sendSolution(this.state.solutionId,
-                                     this.state.version, entries);
-      this.setState({modified: false});
-    }
   }
   componentDidMount() {
     var self = this;
+    this.loadWordlist();
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
-    var puzzle = window.location.hash.substring(1);
-    if (puzzle) {
-      self.loadServerPuzzle(puzzle);
-      return;
-    }
-    puzzle = window.location.search.substring(1);
-    if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz)$/)) {
-      self.loadPuzzleURL(process.env.PUBLIC_URL + puzzle);
-    } else if (puzzle.match(/^http/)) {
-      self.loadPuzzleURL(puzzle);
-    } else if (puzzle === "new") {
-      self.newPuzzle();
-    }
   }
   componentWillUnmount() {
     var self = this;
@@ -1051,62 +938,49 @@ class XwordMain extends Component {
           <div className="XwordMain"/>
         );
       }
-      if (process.env.REACT_APP_HAS_SERVER) {
-         return (
-           <div className="XwordMain">
-             <div className="xwordjs-text-box">
-             <h1>Collaborative XwordJS</h1>
-
-             <p>
-             Upload a crossword puzzle here (.puz or .xpf format).
-             Once loaded, you can copy the random URL string and share with
-             someone else to play together.
-             </p>
-
-             <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
-             </div>
-           </div>
-         );
-      }
       return (
         <div className="XwordMain">
           <div className="xwordjs-text-box">
           <h1>XwordJS</h1>
 
           <p>
-          Select a crossword puzzle here (.puz or .xpf format) and then
-          you can solve it in your browser.  The file will remain local
+          Upload a crossword puzzle here (.puz, .xpf, or .xd format) and then
+          you can edit the puzzle.  The file remains local to your computer
           and not uploaded anywhere else.
           </p>
 
           <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
+
+          <p>Or start a new puzzle.</p>
+          <form>
+            Width: <input type="number" id="newwidth" value="15"/>
+            Height: <input type="number" id="newheight" value="15"/>
+            <input type="button" onClick={() => this.newPuzzle(
+                // $FlowFixMe
+                document.getElementById("newwidth").value,
+                // $FlowFixMe
+                document.getElementById("newheight").value)} value="Start"/>
+          </form>
           </div>
         </div>
       );
     }
     return (
       <div className="XwordMain">
-        <Modal isOpen={this.isCorrect() && !this.state.dismissed_modal}>
-          <h1>Nice job!</h1>
-          <p>You solved it.  Sorry for the anticlimactic dialog.</p>
-          <p>It took {this.state.timer.elapsedStr(true)}.</p>
-          <button onClick={this.closeModal}>OK</button>
-        </Modal>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
           </div>
-          <Timer value={this.state.timer} onChange={(x) => this.updateTimer(x)}/>
-          <ClueBar value={this.state.clues}/>
           <div className="xwordjs-container">
             <div className="xwordjs-grid">
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
-            <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
+            <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
           </div>
+          <div>Estimated fills: {this.state.numFills}</div>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
         </div>
-        <a href="#" onClick={() => this.showAnswers()}>Answers</a>
+        <a href="#" onClick={() => this.fill()}>Fill</a>
       </div>
     );
   }
