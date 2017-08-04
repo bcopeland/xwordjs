@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
+import { Route, Switch } from 'react-router-dom';
 import './Xword.css';
 
 // . undo/redo
@@ -233,7 +234,7 @@ class Mutation {
   }
 }
 
-class XwordMain extends Component {
+class XwordSolver extends Component {
 
   state: {
     height: number,
@@ -988,11 +989,6 @@ class XwordMain extends Component {
   }
   render() {
     if (this.state.cells.length === 0) {
-      if (window.location.search.length || window.location.hash.length) {
-        return (
-          <div className="XwordMain"/>
-        );
-      }
       return (
         <div className="XwordMain">
           <div className="xwordjs-text-box">
@@ -1033,7 +1029,7 @@ class XwordMain extends Component {
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
           </div>
           <div>Estimated fills: {this.state.numFills}</div>
-          <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
+          <MobileKeyboard onClick={(code) => this.processKeyCode(code, false, false)}/>
         </div>
         <a href="#" onClick={() => this.fill()}>Fill</a>
         <hr/>
@@ -1041,6 +1037,20 @@ class XwordMain extends Component {
       </div>
     );
   }
+}
+
+function XwordLoad(props) {
+  return (
+    <XwordSolver filename={props.match.params.name}/>
+  );
+}
+
+function XwordMain() {
+  return (
+    <Switch>
+      <Route exact path="/" component={XwordSolver}/>
+    </Switch>
+  );
 }
 
 export default XwordMain;
