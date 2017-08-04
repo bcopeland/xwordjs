@@ -237,7 +237,7 @@ class XwordMain extends Component {
     fills: Array<string>,
     numFills: number,
     server: ?Server,
-    wordlist: ?Filler.wordlist
+    filler: Filler.filler
   };
   closeModal: Function;
   showAnswers: Function;
@@ -258,7 +258,7 @@ class XwordMain extends Component {
       'cell_to_clue_table': [],
       'clue_to_cell_table': [],
       'dismissed_modal': false,
-      wordlist: null,
+      filler: new Filler.filler('', new Filler.wordlist([])),
       modified: false,
       version: 1,
       fills: [],
@@ -351,7 +351,7 @@ class XwordMain extends Component {
     }).then(function(data) {
       // $FlowFixMe
       var text = new TextDecoder('utf-8').decode(data);
-      self.setState({wordlist: new Filler.wordlist(text.trim().split("\n"))});
+      self.setState({filler: new Filler.filler('', new Filler.wordlist(text.trim().split("\n")))});
     });
   }
   getFillerString() : string {
@@ -374,29 +374,19 @@ class XwordMain extends Component {
 
     var grid = this.getFillerString();
 
-    if (!this.state.wordlist)
-      return;
-
-    var filler = new Filler.filler(grid, this.state.wordlist);
+    var filler = this.state.filler;
+    filler.updateGrid(grid);
     var result = filler.getFills(x, y, dir);
     var numFills = filler.estimatedFills();
 
-    if (!this.state.wordlist)
-      return;
-
-    var withscores = [];
-    for (var i=0; i < result.length; i++) {
-      withscores.push(result[i] + " [" + this.state.wordlist.score(result[i]) + "]");
-    }
-    this.setState({fills: withscores, numFills: numFills});
+    this.setState({fills: result, numFills: numFills});
   }
   fill() {
     var grid = this.getFillerString();
 
-    if (!this.state.wordlist)
-      return;
-
-    var result = new Filler.filler(grid, this.state.wordlist).fill();
+    var filler = this.state.filler;
+    filler.updateGrid(grid);
+    var result = filler.fill();
     var rows = result.trim().split("\n");
     for (var i = 0; i < rows.length; i++) {
       for (var j = 0; j < rows[i].length; j++) {

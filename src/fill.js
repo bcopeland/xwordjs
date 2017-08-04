@@ -534,9 +534,15 @@ class Grid {
 class Filler {
 
   grid : Grid;
+  wordlist : Wordlist;
 
   constructor(template : string, wordlist : Wordlist) {
     this.grid = new Grid(template, wordlist);
+    this.wordlist = wordlist;
+  }
+
+  updateGrid(template : string) {
+    this.grid = new Grid(template, this.wordlist);
   }
 
   fill() : string {
