@@ -4,6 +4,7 @@ import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
 import { Route, Switch } from 'react-router-dom';
+import {Navbar, Nav, MenuItem, NavDropdown} from 'react-bootstrap';
 import './Xword.css';
 
 // . undo/redo
@@ -1045,12 +1046,40 @@ function XwordLoad(props) {
   );
 }
 
-function XwordMain() {
+function XwordNav() {
+  return (
+    <Navbar>
+      <Navbar.Header>
+        <Navbar.Toggle />
+      </Navbar.Header>
+      <Navbar.Collapse>
+        <Nav>
+          <NavDropdown eventKey={1} title="Dropdown" id="basic-nav-dropdown">
+            <MenuItem eventKey={1.1}>Settings 1</MenuItem>
+            <MenuItem eventKey={1.1}>Settings 2</MenuItem>
+          </NavDropdown>
+        </Nav>
+      </Navbar.Collapse>
+    </Navbar>
+  );
+}
+
+function XwordMainPanel() {
   return (
     <Switch>
       <Route exact path="/" component={XwordSolver}/>
     </Switch>
   );
 }
+
+function XwordMain() {
+  return (
+    <div>
+      <XwordNav />
+      <XwordMainPanel />
+    </div>
+  );
+}
+
 
 export default XwordMain;
