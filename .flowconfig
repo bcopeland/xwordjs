@@ -1,0 +1,5 @@
+[ignore]
+.*/node_modules/react/node_modules/fbjs/.*
+
+[options]
+suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe

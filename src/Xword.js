@@ -293,6 +293,7 @@ class XwordMain extends Component {
   };
   closeModal: Function;
   showAnswers: Function;
+  serverUpdate: Function;
 
   constructor() {
     super();
@@ -366,10 +367,12 @@ class XwordMain extends Component {
       var fn = filename || url;
       if (fn.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
+        // $FlowFixMe
         puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
+        // $FlowFixMe
         puz = new Xpf(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
@@ -894,6 +897,7 @@ class XwordMain extends Component {
       entries.push({'Version': cell.get('version'), 'Value': cell.get('entry')});
     }
     if (this.state.modified) {
+      // $FlowFixMe
       this.state.server.sendSolution(this.state.solutionId,
                                      this.state.version, entries);
       this.setState({modified: false});
