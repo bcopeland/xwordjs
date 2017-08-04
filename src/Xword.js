@@ -4,6 +4,7 @@ import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
+import { Route, Switch } from 'react-router-dom';
 import './Xword.css';
 
 // TODO
@@ -271,7 +272,7 @@ function Cell(props) {
           </div>;
 }
 
-class XwordMain extends Component {
+class XwordSolver extends Component {
 
   state: {
     height: number,
@@ -906,6 +907,10 @@ class XwordMain extends Component {
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
+    if (this.props.filename) {
+      self.loadPuzzleURL(process.env.PUBLIC_URL + this.props.filename);
+    }
+    /*
     var puzzle = window.location.hash.substring(1);
     if (puzzle) {
       self.loadServerPuzzle(puzzle);
@@ -917,6 +922,7 @@ class XwordMain extends Component {
     } else if (puzzle.match(/^http/)) {
       self.loadPuzzleURL(puzzle);
     }
+    */
   }
   componentWillUnmount() {
     var self = this;
@@ -924,10 +930,15 @@ class XwordMain extends Component {
   }
   render() {
     if (this.state.cells.length === 0) {
+      /*
       if (window.location.search.length || window.location.hash.length) {
         return (
           <div className="XwordMain"/>
         );
+      }
+      */
+      if (this.props.filename) {
+        return (<span>{"hi"}</span>);
       }
       if (process.env.REACT_APP_HAS_SERVER) {
          return (
@@ -988,6 +999,21 @@ class XwordMain extends Component {
       </div>
     );
   }
+}
+
+function XwordLoad(props) {
+  return (
+    <XwordSolver filename={props.match.params.name}/>
+  );
+}
+
+function XwordMain() {
+  return (
+    <Switch>
+      <Route exact path="/" component={XwordSolver}/>
+      <Route path="/load/:name" component={XwordLoad}/>
+    </Switch>
+  );
 }
 
 export default XwordMain;

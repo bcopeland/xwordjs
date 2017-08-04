@@ -1,9 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { HashRouter } from 'react-router-dom';
 import XwordMain from './Xword';
 import './index.css';
 
 ReactDOM.render(
-  <XwordMain />,
+  (<HashRouter>
+    <XwordMain />
+  </HashRouter>),
   document.getElementById('root')
 );
