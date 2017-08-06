@@ -55,6 +55,7 @@ class XwordCell {
   state: {
     fill: string,
     entry: string,
+    committed: boolean,
     active: boolean,
     focus: boolean,
     circled: boolean,
@@ -69,6 +70,7 @@ class XwordCell {
       fill: '.',
       entry: ' ',
       active: false,
+      committed: false,
       focus: false,
       circled: false,
       version: 0,
@@ -242,6 +244,7 @@ class XwordMain extends Component {
   closeModal: Function;
   showAnswers: Function;
   serverUpdate: Function;
+  clearUncommitted: Function;
   fill: Function;
   fillEntry: Function;
 
@@ -272,6 +275,7 @@ class XwordMain extends Component {
     this.serverUpdate = this.serverUpdate.bind(this);
     this.fill = this.fill.bind(this);
     this.fillEntry = this.fillEntry.bind(this);
+    this.clearUncommitted = this.clearUncommitted.bind(this);
   }
   loadServerPuzzle(id: string) {
     if (!process.env.REACT_APP_HAS_SERVER)
@@ -375,17 +379,23 @@ class XwordMain extends Component {
     var grid = this.getFillerString();
 
     var filler = this.state.filler;
-    filler.updateGrid(grid);
     var result = filler.getFills(x, y, dir);
     var numFills = filler.estimatedFills();
 
     this.setState({fills: result, numFills: numFills});
   }
+  clearUncommitted() {
+    for (var i=0; i < this.state.cells.length; i++) {
+      if (!this.state.cells[i].get('committed')) {
+        this.state.cells[i].setState({entry: ' '});
+      }
+    }
+    this.setState({'cells': this.state.cells.slice()});
+  }
   fill() {
     var grid = this.getFillerString();
 
     var filler = this.state.filler;
-    filler.updateGrid(grid);
     var result = filler.fill();
     var rows = result.trim().split("\n");
     for (var i = 0; i < rows.length; i++) {
@@ -542,7 +552,7 @@ class XwordMain extends Component {
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ch, 'version': cell.get('version') + 1});
+    cell.setState({'entry': ch, 'version': cell.get('version') + 1, committed: true});
     this.setState({modified: true})
     this.saveStoredData();
     this.navNext();
@@ -550,14 +560,16 @@ class XwordMain extends Component {
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1, committed: true});
     this.setState({modified: true})
+    this.saveStoredData();
     this.selectCell(this.state.activecell, this.state.direction);
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1, committed: true});
     this.setState({modified: true})
+    this.saveStoredData();
     this.navPrev();
   }
   isCorrect() {
@@ -708,6 +720,7 @@ class XwordMain extends Component {
         cells[y * maxx + x] = new XwordCell({
           'fill': fill,
           'entry': entry,
+          'committed': true,
           'number': number,
           'active': false,
           'circled': circled
@@ -784,6 +797,11 @@ class XwordMain extends Component {
       entries: this.state.cells.map((x) => x.state.entry),
     };
     localStorage.setItem(key, JSON.stringify(data));
+
+    // update filler state
+    var grid = this.getFillerString();
+    var filler = this.state.filler;
+    filler.updateGrid(grid);
   }
   readStoredData()
   {
@@ -906,7 +924,7 @@ class XwordMain extends Component {
 
     for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
       var cell_id = y * this.state.width + x;
-      this.state.cells[cell_id].setState({entry: value[i]});
+      this.state.cells[cell_id].setState({entry: value[i], committed: true});
     }
     var newcells = this.state.cells.slice();
     this.setState({'cells': newcells});
@@ -971,6 +989,8 @@ class XwordMain extends Component {
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
         </div>
         <a href="#" onClick={() => this.fill()}>Fill</a>
+        <hr/>
+        <a href="#" onClick={() => this.clearUncommitted()}>Clear uncommitted entries</a>
       </div>
     );
   }
