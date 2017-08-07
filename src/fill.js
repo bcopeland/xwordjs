@@ -29,11 +29,13 @@ function bitmap_to_char(x: number) : string {
 class Wordlist {
 
   words: Array<string>;
+  word_bitmaps: Array<Array<number>>;
   scores: { [string] : number };
   len_idx: Map<number,number>;
 
   constructor(word_array : Array<string>) {
     this.words = [];
+    this.word_bitmaps = [];
     this.scores = {};
     this.len_idx = new Map();
 
@@ -66,11 +68,21 @@ class Wordlist {
       if (!this.len_idx.has(wlen)) {
         this.len_idx.set(wlen, i);
       }
+      var bitmap = [];
+      var word = this.words[i];
+      for (var j=0; j < word.length; j++) {
+        bitmap.push(1 << char_to_bitmap(word[j]));
+      }
+      this.word_bitmaps.push(bitmap);
     }
   }
 
   at(index: number) : string {
     return this.words[index];
+  }
+
+  bitmap_at(index: number) : Array<number> {
+    return this.word_bitmaps[index];
   }
 
   score(value: string) : number {
@@ -111,6 +123,7 @@ class Cell {
 
   set(value: string) {
     this.value = value;
+    this.resetValid();
   }
 
   validLettersString() : string {
@@ -148,19 +161,16 @@ class Cell {
     }
   }
 
+  getValidLetters(): number {
+    return this.valid_letters;
+  }
+
   entry(direction: number) : ?Entry {
     return (direction === DIR_DOWN) ? this.down_entry : this.across_entry;
   }
 
   applyMask(valid_bitmap: number) : void {
     this.valid_letters &= valid_bitmap;
-  }
-
-  crossViable(letter: string) : bool {
-    if (this.value != UNFILLED_CHAR) {
-      return this.value.toLowerCase() === letter;
-    }
-    return !!((1 << char_to_bitmap(letter)) & this.valid_letters);
   }
 
   getValue() : string {
@@ -222,6 +232,15 @@ class Entry {
     return pattern;
   }
 
+  bitPattern() : Array<number>
+  {
+    var pattern = [];
+    for (var i = 0; i < this.cells.length; i++) {
+      pattern.push(this.cells[i].getValidLetters());
+    }
+    return pattern;
+  }
+
   completed() : bool
   {
     var pattern = this.cellPattern();
@@ -232,16 +251,16 @@ class Entry {
   {
     var fills;
     if (this.completed()) {
-      fills = [this.cellPattern()];
+      fills = [this.bitPattern()];
     } else {
       fills = [];
       for (var i = 0; i < this.valid_words.length; i++) {
-        fills.push(this.wordlist.at(i));
+        fills.push(this.wordlist.bitmap_at(this.valid_words[i]));
       }
       for (i = 0; i < this.cells.length; i++) {
         var valid_letters = 0;
         for (var j = 0; j < fills.length; j++) {
-          valid_letters |= (1 << char_to_bitmap(fills[j].charAt(i)));
+          valid_letters |= fills[j][i];
         }
         this.cells[i].applyMask(valid_letters);
       }
@@ -261,13 +280,12 @@ class Entry {
     return fill;
   }
 
-  satisfy(check_crosses) : bool
+  satisfy() : bool
   {
-    var pattern = this.cellPattern();
-    var regex = new RegExp(pattern);
+    var pattern = this.bitPattern();
 
     var orig_len = this.valid_words.length;
-    var valid_words = [];
+    var new_valid = [];
     for (var i = 0; i < orig_len; i++) {
       var word = this.wordlist.at(this.valid_words[i]);
 
@@ -279,32 +297,21 @@ class Entry {
         continue;
       }
 
-      if (!regex.test(word)) {
+      var skip = false;
+      var bitmap = this.wordlist.bitmap_at(this.valid_words[i]);
+      for (var j = 0; j < pattern.length; j++) {
+        if (!(pattern[j] & bitmap[j])) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) {
         continue;
       }
-      valid_words.push(this.valid_words[i]);
-    }
 
-    if (check_crosses) {
-      var keep = [];
-      for (i = 0; i < valid_words.length; i++) {
-        var idx = this.valid_words[i];
-        var word = this.wordlist.at(idx);
-        var drop = false;
-        for (var j = 0; j < word.length; j++) {
-          if (!this.cells[j].crossViable(word.charAt(j))) {
-            drop = true;
-            break;
-          }
-        }
-        if (!drop) {
-          keep.push(idx);
-        }
-      }
-      valid_words = keep;
+      new_valid.push(this.valid_words[i]);
     }
-
-    this.valid_words = valid_words;
+    this.valid_words = new_valid;
     this.recomputeValidLetters();
     return orig_len != this.valid_words.length;
   }
@@ -513,6 +520,7 @@ class Grid {
       // try next word
       this.used_words.delete(fill);
       entry.nextWord();
+      this.satisfyAll();
     }
 
     // no more words left
