@@ -5,8 +5,8 @@ import FileInput from './FileInput.js';
 import Server from './Server.js';
 import './Xword.css';
 
+// . undo/redo
 // . webworker impl
-// . committed / uncommitted letters
 // . test fill
 // . menu
 // . export as xd/puz/pdf
@@ -14,7 +14,6 @@ import './Xword.css';
 //   . don't fill the score!
 // . hint entry
 // . difficulty grade
-// . undo/redo
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
@@ -221,6 +220,19 @@ function Cell(props) {
           </div>;
 }
 
+class Mutation {
+  start_cell: number;
+  direction: number;
+  fill: string;
+
+  constructor(start_cell: number, direction: number, fill: string)
+  {
+    this.start_cell = start_cell;
+    this.direction = direction;
+    this.fill = fill;
+  }
+}
+
 class XwordMain extends Component {
 
   state: {
@@ -239,7 +251,8 @@ class XwordMain extends Component {
     fills: Array<string>,
     numFills: number,
     server: ?Server,
-    filler: Filler.filler
+    filler: Filler.filler,
+    undo: Array<Mutation>
   };
   closeModal: Function;
   showAnswers: Function;
@@ -268,7 +281,8 @@ class XwordMain extends Component {
       numFills: 0,
       construct: false,
       solutionId: null,
-      server: null
+      server: null,
+      undo: [],
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
@@ -583,8 +597,15 @@ class XwordMain extends Component {
     }
     return true;
   }
-  processKeyCode(keyCode: number, shift: boolean)
+  processKeyCode(keyCode: number, shift: boolean, ctrl: boolean)
   {
+    // ctrl-z
+    if (ctrl && keyCode == 0x5a)
+    {
+      this.undo();
+      return true;
+    }
+
     // A-Z
     if ((keyCode >= 0x41 && keyCode <= 0x5a) ||
         (keyCode >= 0x61 && keyCode <= 0x7a)) {
@@ -628,7 +649,7 @@ class XwordMain extends Component {
     }
   }
   handleKeyDown(e: KeyboardEvent) {
-    if (e.ctrlKey || e.altKey)
+    if (e.altKey)
       return;
 
     if (this.state.direction === 'A' && (e.keyCode === 0x26 || e.keyCode === 0x28)) {
@@ -641,9 +662,29 @@ class XwordMain extends Component {
       e.preventDefault();
       return;
     }
-    if (this.processKeyCode(e.keyCode, e.shiftKey)) {
+    if (this.processKeyCode(e.keyCode, e.shiftKey, e.ctrlKey)) {
       e.preventDefault();
     }
+  }
+  undo() {
+    var mutation;
+
+    if (!this.state.undo.length)
+      return;
+    
+    mutation = this.state.undo.pop();
+
+    var [x, y] = this.cellPos(mutation.start_cell);
+    var x_incr = !mutation.direction;
+    var y_incr = mutation.direction;
+    var value = mutation.fill;
+
+    var orig_str = '';
+    for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
+      var cell_id = y * this.state.width + x;
+      this.state.cells[cell_id].setState({entry: value[i], committed: true});
+    }
+    this.setState({'cells': this.state.cells.slice(), 'undo': this.state.undo.slice()});
   }
   toggleBlank() {
     var i = this.state.activecell;
@@ -922,13 +963,18 @@ class XwordMain extends Component {
     var [x, y] = this.rewindToStart(pos[0], pos[1], this.state.direction === 'A' ? 0 : 1);
     var x_incr = this.state.direction === 'A' ? 1 : 0;
     var y_incr = (x_incr) ? 0 : 1;
+    var start_cell = y * this.state.width + x;
 
+
+    var orig_str = '';
     for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
       var cell_id = y * this.state.width + x;
+      orig_str += this.state.cells[cell_id].get('entry');
       this.state.cells[cell_id].setState({entry: value[i], committed: true});
     }
+    this.state.undo.push(new Mutation(start_cell, y_incr, orig_str));
     var newcells = this.state.cells.slice();
-    this.setState({'cells': newcells});
+    this.setState({'cells': newcells, 'undo': this.state.undo.slice()});
     this.saveStoredData();
   }
   componentDidMount() {
