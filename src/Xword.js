@@ -372,11 +372,11 @@ class XwordMain extends Component {
     }
     return grid;
   }
-  updateFills() {
-    var [x, y] = this.cellPos(this.state.activecell);
-    var dir = this.state.direction === 'A' ? 0 : 1;
+  updateFills(activecell: number, direction: string) {
+    var [x, y] = this.cellPos(activecell);
+    var dir = direction === 'A' ? 0 : 1;
 
-    var grid = this.getFillerString();
+    console.log("update fills: " + x + ", " + y + " " + dir);
 
     var filler = this.state.filler;
     var result = filler.getFills(x, y, dir);
@@ -621,7 +621,7 @@ class XwordMain extends Component {
       case 0x2e:
         this.del();
         return true;
-      case 0xbe:
+      case 0xbe: // '.'
         this.toggleBlank();
       default:
         return false;
@@ -646,23 +646,23 @@ class XwordMain extends Component {
     }
   }
   toggleBlank() {
-    if (!this.state.construct)
-      return;
-
     var i = this.state.activecell;
     var dir = this.state.direction;
 
     var [x,y] = this.cellPos(i);
     var cell = this.state.cells[i];
     var black = cell.isBlack();
-    cell.setState({fill: black ? ' ' : '#'});
+    var fill = black ? ' ' : '#';
+    cell.setState({fill: fill});
 
     var symx = this.state.width - x - 1;
     var symy = this.state.height - y - 1;
     cell = this.state.cells[this.state.width * symy + symx];
-    cell.setState({fill: black ? ' ' : '#'});
+    cell.setState({fill: fill});
 
     this.setState({cells: this.state.cells.slice()});
+    this.saveStoredData();
+    this.updateFills(i, dir);
   }
   handleClick(i: number) {
     if (this.state.activecell === i) {
@@ -826,6 +826,7 @@ class XwordMain extends Component {
     }
     this.setState({modified: true})
     this.setState({cells: this.state.cells});
+    this.state.filler.updateGrid(this.getFillerString());
   }
   rewindToStart(x: number, y: number, direction: number)
   {
@@ -888,7 +889,7 @@ class XwordMain extends Component {
     cell.setState({focus: true});
 
     this.setState({'cells': newcells, 'activecell': cell_id, 'direction': direction});
-    this.updateFills();
+    this.updateFills(cell_id, direction);
   }
   closeModal() {
     this.setState({'dismissed_modal': true});
