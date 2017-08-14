@@ -1019,6 +1019,7 @@ class XwordSolver extends Component {
     }
     return (
       <div className="XwordMain">
+        <XwordNav processToggle={() => this.toggleBlank()} undo={() => this.undo()}/>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
@@ -1046,7 +1047,7 @@ function XwordLoad(props) {
   );
 }
 
-function XwordNav() {
+function XwordNav(props) {
   return (
     <Navbar>
       <Navbar.Header>
@@ -1054,10 +1055,8 @@ function XwordNav() {
       </Navbar.Header>
       <Navbar.Collapse>
         <Nav>
-          <NavDropdown eventKey={1} title="Dropdown" id="basic-nav-dropdown">
-            <MenuItem eventKey={1.1}>Settings 1</MenuItem>
-            <MenuItem eventKey={1.1}>Settings 2</MenuItem>
-          </NavDropdown>
+          <MenuItem eventKey={1.1} onSelect={(event, eventKey) => props.processToggle()}>Toggle Blank</MenuItem>
+          <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
         </Nav>
       </Navbar.Collapse>
     </Navbar>
@@ -1075,7 +1074,6 @@ function XwordMainPanel() {
 function XwordMain() {
   return (
     <div>
-      <XwordNav />
       <XwordMainPanel />
     </div>
   );

@@ -183,12 +183,6 @@
 
 /* mobile settings */
 @media screen and (max-width:600px) {
-  .xwordjs-fill-list-container {
-    display: none;
-  }
-  .xwordjs-fill-list {
-    display: none;
-  }
   .xwordjs-cell {
     width: 21px;
     height: 21px;
