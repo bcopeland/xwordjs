@@ -5,7 +5,6 @@ import FileInput from './FileInput.js';
 import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch } from 'react-router-dom';
-import {Navbar, Nav, MenuItem, NavDropdown} from 'react-bootstrap';
 import './Xword.css';
 
 // TODO
@@ -367,13 +366,14 @@ class XwordSolver extends Component {
     }).then(function(data) {
       var puz;
       var fn = filename || url;
+      var decoder;
       if (fn.endsWith("xd")) {
-        var decoder = new TextDecoder('utf-8');
+        decoder = new TextDecoder('utf-8');
         // $FlowFixMe
         puz = new Xd(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else if (fn.endsWith("xml") || url.match(/^http/)) {
-        var decoder = new TextDecoder('utf-8');
+        decoder = new TextDecoder('utf-8');
         // $FlowFixMe
         puz = new Xpf(decoder.decode(data));
         self.puzzleLoaded(url, puz);
@@ -910,20 +910,26 @@ class XwordSolver extends Component {
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
     if (this.props.filename) {
       self.loadPuzzleURL(process.env.PUBLIC_URL + this.props.filename);
-    }
-    /*
-    var puzzle = window.location.hash.substring(1);
-    if (puzzle) {
-      self.loadServerPuzzle(puzzle);
       return;
     }
-    puzzle = window.location.search.substring(1);
-    if (puzzle.match(/^[a-zA-Z0-9-]*.(xd|puz)$/)) {
-      self.loadPuzzleURL(process.env.PUBLIC_URL + puzzle);
-    } else if (puzzle.match(/^http/)) {
-      self.loadPuzzleURL(puzzle);
+    if (this.props.serverId) {
+      self.loadServerPuzzle(this.props.serverId);
+      return;
     }
-    */
+
+    // old-style URLs:
+    // #[^/][hash] -> /s/hash
+    var puzzle = window.location.hash.substring(1);
+    if (puzzle.length && puzzle[0] !== '/' && this.props.history) {
+      this.props.history.push("/s/" + puzzle);
+      return;
+    }
+    // ?filename -> /load/filename
+    puzzle = window.location.search.substring(1);
+    if (puzzle.length && this.props.history) {
+      this.props.history.push("/file/" + puzzle);
+      return;
+    }
   }
   componentWillUnmount() {
     var self = this;
@@ -996,33 +1002,20 @@ class XwordSolver extends Component {
           </div>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
         </div>
-        <a href="#" onClick={() => this.showAnswers()}>Answers</a>
       </div>
     );
   }
 }
 
-function XwordLoad(props) {
+function XwordLoadFile(props) {
   return (
     <XwordSolver filename={props.match.params.name}/>
   );
 }
 
-function XwordNav() {
+function XwordLoadServer(props) {
   return (
-    <Navbar>
-      <Navbar.Header>
-        <Navbar.Toggle />
-      </Navbar.Header>
-      <Navbar.Collapse>
-        <Nav>
-          <NavDropdown eventKey={1} title="Dropdown" id="basic-nav-dropdown">
-            <MenuItem eventKey={1.1}>Settings 1</MenuItem>
-            <MenuItem eventKey={1.1}>Settings 2</MenuItem>
-          </NavDropdown>
-        </Nav>
-      </Navbar.Collapse>
-    </Navbar>
+    <XwordSolver serverId={props.match.params.hash}/>
   );
 }
 
@@ -1030,7 +1023,8 @@ function XwordMainPanel() {
   return (
     <Switch>
       <Route exact path="/" component={XwordSolver}/>
-      <Route path="/load/:name" component={XwordLoad}/>
+      <Route path="/file/:name" component={XwordLoadFile}/>
+      <Route path="/s/:hash" component={XwordLoadServer}/>
     </Switch>
   );
 }
@@ -1038,7 +1032,6 @@ function XwordMainPanel() {
 function XwordMain() {
   return (
     <div>
-      <XwordNav />
       <XwordMainPanel />
     </div>
   );
