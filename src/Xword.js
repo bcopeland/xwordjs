@@ -334,7 +334,6 @@ class XwordSolver extends Component {
       .then(function(data) {
         var decoder = new TextDecoder('utf-8');
         var puz = new Xpf(decoder.decode(data));
-        document.location.hash = id;
         self.setState({solutionId: id, server: server});
         self.puzzleLoaded(id, puz);
         server.connect(id, self.serverUpdate);
@@ -352,6 +351,7 @@ class XwordSolver extends Component {
         })
         .then(function(obj) {
           var solutionId = obj.Id;
+          document.location.hash = "/s/" + solutionId;
           self.loadServerPuzzle(solutionId);
         });
     } else {
@@ -917,6 +917,7 @@ class XwordSolver extends Component {
       return;
     }
 
+    // TODO move to XwordMain ?
     // old-style URLs:
     // #[^/][hash] -> /s/hash
     var puzzle = window.location.hash.substring(1);
@@ -937,15 +938,8 @@ class XwordSolver extends Component {
   }
   render() {
     if (this.state.cells.length === 0) {
-      /*
-      if (window.location.search.length || window.location.hash.length) {
-        return (
-          <div className="XwordMain"/>
-        );
-      }
-      */
-      if (this.props.filename) {
-        return (<span>{"hi"}</span>);
+      if (this.props.filename || this.props.serverId) {
+        return (<span>{"Loading..."}</span>);
       }
       if (process.env.REACT_APP_HAS_SERVER) {
          return (

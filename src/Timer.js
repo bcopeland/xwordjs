@@ -84,7 +84,7 @@ class Timer extends Component {
       </Modal>
       <div className="xwordjs-timer">
          <div className="xwordjs-timer-text">{time_text}</div>
-         <div className="xwordjs-timer-pause" onClick={this.handleClick}><b>&#8545;</b></div>
+         <div className="xwordjs-timer-pause" onClick={this.handleClick}><i className="fa fa-pause" aria-hidden="true"></i></div>
       </div>
       </div>
     );
