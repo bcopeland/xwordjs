@@ -5,6 +5,7 @@ import FileInput from './FileInput.js';
 import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch } from 'react-router-dom';
+import { DropdownButton, MenuItem } from 'react-bootstrap';
 import './Xword.css';
 
 // TODO
@@ -20,9 +21,6 @@ import './Xword.css';
 //   . shift-tab focus last letter
 //   . scrollIntoViewIfNeeded(centered) - polyfill
 //   . scroll sideways annoying
-//  . reveal letter
-//  . reveal clue
-//  . show errors
 //  . phone interface
 //   . clue only entry
 //  . restyle input selection
@@ -79,6 +77,7 @@ class XwordCell {
     active: boolean,
     focus: boolean,
     circled: boolean,
+    incorrect: boolean,
     number: number,
     version: number,
   };
@@ -90,6 +89,7 @@ class XwordCell {
       active: false,
       focus: false,
       circled: false,
+      incorrect: false,
       version: 0,
       number: 0,
     };
@@ -192,6 +192,7 @@ class Grid extends Component {
         var active = this.props.cells[ind].get('active');
         var focus = this.props.cells[ind].get('focus');
         var circled = this.props.cells[ind].get('circled');
+        var incorrect = this.props.cells[ind].get('incorrect');
         var number = this.props.cells[ind].get('number') || '';
         var black = fill === '#';
 
@@ -201,6 +202,7 @@ class Grid extends Component {
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
          isCircled={circled}
+         isIncorrect={incorrect}
          isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(parseInt(x.substring(5), 10))}/>;
         row_cells.push(cell);
@@ -256,9 +258,17 @@ function Cell(props) {
   }
   if (props.isFocus) {
     classname += " xwordjs-cell-focus";
+    if (props.isIncorrect)
+      classname += "-incorrect";
   } else if (props.isActive) {
     classname += " xwordjs-cell-active";
+    if (props.isIncorrect)
+      classname += "-incorrect";
   }
+
+  if (props.isIncorrect)
+    classname += " xwordjs-cell-incorrect";
+
   var circleclass = "";
   if (props.isCircled) {
     circleclass = "xwordjs-cell-circled";
@@ -293,7 +303,7 @@ class XwordSolver extends Component {
     server: ?Server
   };
   closeModal: Function;
-  showAnswers: Function;
+  revealAll: Function;
   serverUpdate: Function;
 
   constructor() {
@@ -317,7 +327,7 @@ class XwordSolver extends Component {
       'server': null,
     }
     this.closeModal = this.closeModal.bind(this);
-    this.showAnswers = this.showAnswers.bind(this);
+    this.revealAll = this.revealAll.bind(this);
     this.serverUpdate = this.serverUpdate.bind(this);
   }
   loadServerPuzzle(id: string) {
@@ -845,6 +855,38 @@ class XwordSolver extends Component {
     }
     this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction});
   }
+  revealCell()
+  {
+    var cell = this.state.cells[this.state.activecell];
+    cell.setState({'entry': cell.get('fill')});
+    this.setState({'cells': this.state.cells.slice()});
+  }
+  revealClue()
+  {
+    var dind = (this.state.direction === 'A') ? 0 : 1;
+    var cur_cell_id = this.state.activecell;
+    var clue_id = this.state.cell_to_clue_table[cur_cell_id][dind];
+
+    var cind = this.state.clue_to_cell_table[clue_id];
+    var [x, y] = this.cellPos(cind);
+
+    var x_incr = !dind;
+    var y_incr = !x_incr;
+
+    for (; x < this.state.width && y < this.state.height; ) {
+      var cell = this.state.cells[this.state.width * y + x];
+      if (cell.isBlack())
+        break;
+
+      cell.setState({"entry": cell.get('fill')});
+      x += x_incr;
+      y += y_incr;
+    }
+
+    var cell = this.state.cells[this.state.activecell];
+    cell.setState({'entry': cell.get('fill')});
+    this.setState({'cells': this.state.cells.slice()});
+  }
   selectClue(clue: XwordClue)
   {
     var cluenum = clue.get('index');
@@ -856,7 +898,20 @@ class XwordSolver extends Component {
   closeModal() {
     this.setState({'dismissed_modal': true});
   }
-  showAnswers() {
+  showErrors() {
+    for (var i=0; i < this.state.cells.length; i++) {
+      var cell = this.state.cells[i];
+      if (!cell.isBlack()) {
+        if (cell.get('entry') != ' ' &&
+            cell.get('entry') !== cell.get('fill')) {
+          cell.setState({incorrect: true});
+        }
+      }
+    }
+    var newcells = this.state.cells.slice();
+    this.setState({'cells': newcells});
+  }
+  revealAll() {
     this.setState({'dismissed_modal': true});
     for (var i=0; i < this.state.cells.length; i++) {
       var cell = this.state.cells[i];
@@ -986,7 +1041,17 @@ class XwordSolver extends Component {
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
           </div>
-          <Timer value={this.state.timer} onChange={(x) => this.updateTimer(x)}/>
+          <div className="xwordjs-timer-bar">
+            <Timer value={this.state.timer} onChange={(x) => this.updateTimer(x)}/>
+            <DropdownButton title="Reveal">
+              <MenuItem eventKey="1" onClick={() => this.showErrors()}>Show Errors</MenuItem>
+              <MenuItem divider/>
+              <MenuItem eventKey="2" onClick={() => this.revealCell()}>Reveal Cell</MenuItem>
+              <MenuItem eventKey="3" onClick={() => this.revealClue()}>Reveal Clue</MenuItem>
+              <MenuItem divider/>
+              <MenuItem eventKey="4" onClick={() => this.revealAll()}>Reveal All</MenuItem>
+            </DropdownButton>
+          </div>
           <ClueBar value={this.state.clues}/>
           <div className="xwordjs-container">
             <div className="xwordjs-grid">

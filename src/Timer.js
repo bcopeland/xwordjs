@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
+import { Button } from 'react-bootstrap';
 
 class TimerState {
   constructor(options) {
@@ -82,10 +83,8 @@ class Timer extends Component {
         <p>I guess you have something better to do than finish this right now.</p>
         <button onClick={this.handleClick}>Resume</button>
       </Modal>
-      <div className="xwordjs-timer">
-         <div className="xwordjs-timer-text">{time_text}</div>
-         <div className="xwordjs-timer-pause" onClick={this.handleClick}><i className="fa fa-pause" aria-hidden="true"></i></div>
-      </div>
+      <Button className="xwordjs-timer-text" onClick={this.handleClick}>
+      <i className="fa fa-pause" aria-hidden="true"></i>&nbsp;&nbsp;{time_text}</Button>
       </div>
     );
   }

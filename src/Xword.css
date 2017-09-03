@@ -76,6 +76,18 @@
   background-color: #a0ffa0;
 }
 
+.xwordjs-cell-incorrect {
+  background-color: #ffd335;
+}
+
+.xwordjs-cell-active-incorrect {
+  background-color: #ffe68c;
+}
+
+.xwordjs-cell-focus-incorrect {
+  background-color: #ffeeb2;
+}
+
 .xwordjs-cluelist-container {
   display: flex;
   height: 550px;
@@ -116,7 +128,12 @@
   width: 100%;
 }
 
-.xwordjs-timer {
+.xwordjs-timer-bar {
+  display: flex;
+  user-select: none;
+}
+
+.xwordjs-timer-bar {
   display: flex;
   user-select: none;
 }
