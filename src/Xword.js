@@ -6,6 +6,7 @@ import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch } from 'react-router-dom';
 import { DropdownButton, MenuItem } from 'react-bootstrap';
+import scrollIntoViewIfNeeded from 'scroll-into-view-if-needed';
 import './Xword.css';
 
 // TODO
@@ -19,7 +20,6 @@ import './Xword.css';
 //  . polish
 //   . clue resize to grid height
 //   . shift-tab focus last letter
-//   . scrollIntoViewIfNeeded(centered) - polyfill
 //   . scroll sideways annoying
 //  . phone interface
 //   . clue only entry
@@ -830,7 +830,7 @@ class XwordSolver extends Component {
         cross.setState({"crossActive": true});
         e = document.getElementById("clue_" + cross.get('index'));
         if (e)
-          e.scrollIntoView();
+          scrollIntoViewIfNeeded(e);
       }
     }
 
@@ -845,7 +845,7 @@ class XwordSolver extends Component {
         this.highlightClue(clue, true);
         e = document.getElementById("clue_" + clue.get('index'));
         if (e)
-          e.scrollIntoView();
+          scrollIntoViewIfNeeded(e);
       }
     }
 
