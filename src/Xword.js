@@ -347,7 +347,11 @@ class XwordSolver extends Component {
         self.setState({solutionId: id, server: server});
         self.puzzleLoaded(id, puz);
         server.connect(id, self.serverUpdate);
-        server.sendSolution(id, -1, '');
+        var entries = [];
+        for (var i=0; i < self.state.cells.length; i++) {
+          entries.push({'Version': -1, 'Value': ''});
+        }
+        server.sendSolution(id, -1, entries);
       });
   }
   loadPuzzle(file: File, filename : ?string) {
