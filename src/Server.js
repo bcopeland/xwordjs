@@ -5,6 +5,14 @@ class Server {
     this.ws = null;
   }
 
+  listSolutions() {
+    var url = this.base_url + '/solution';
+    var request = new Request(url);
+    return fetch(request).then(function(response) {
+      return response.json()
+    });
+  }
+
   getPuzzle(id: string) {
     var url = this.base_url + '/puzzle/' + id;
     var request = new Request(url);

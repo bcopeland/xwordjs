@@ -4,8 +4,8 @@ import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
 import {TimerState, Timer} from './Timer.js';
-import { Route, Switch } from 'react-router-dom';
-import { DropdownButton, MenuItem } from 'react-bootstrap';
+import { Route, Switch, Link } from 'react-router-dom';
+import { DropdownButton, MenuItem, ProgressBar } from 'react-bootstrap';
 import scrollIntoViewIfNeeded from 'scroll-into-view-if-needed';
 import './Xword.css';
 
@@ -1082,12 +1082,52 @@ function XwordLoadServer(props) {
   );
 }
 
+class XwordPuzzleListLoader extends Component
+{
+  state: {
+    items: ?array
+  };
+
+  constructor(options) {
+    super();
+    this.state = {
+      items: null
+    }
+    Object.assign(this.state, options);
+  };
+
+  componentDidMount()
+  {
+    var self = this;
+    var server = new Server({base_url: process.env.PUBLIC_URL})
+    server.listSolutions().then(function (data) {
+      self.setState({items: data});
+    });
+  }
+  render() {
+    if (!this.state.items) {
+      return <b>Loading...</b>;
+    }
+    return <XwordPuzzleList puzzles={this.state.items}/>;
+  }
+}
+
+function XwordPuzzleList(props) {
+  var items = [];
+  for (var i = 0; i < props.puzzles.length; i++) {
+    var p = props.puzzles[i];
+    items.push(<li key={i}><Link to={"/s/" + p.Id}>{p.Title + " " + p.Author}<ProgressBar now={p.Progress} label={`${p.Progress}%`}/></Link></li>);
+  }
+  return <ul>{items}</ul>;
+}
+
 function XwordMainPanel() {
   return (
     <Switch>
       <Route exact path="/" component={XwordSolver}/>
       <Route path="/file/:name" component={XwordLoadFile}/>
       <Route path="/s/:hash" component={XwordLoadServer}/>
+      <Route path="/list" component={XwordPuzzleListLoader}/>
     </Switch>
   );
 }
