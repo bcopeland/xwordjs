@@ -2,7 +2,6 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
-import Server from './Server.js';
 import { Route, Switch } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown} from 'react-bootstrap';
 import './Xword.css';
@@ -252,7 +251,6 @@ class XwordSolver extends Component {
     modified: boolean,
     fills: Array<string>,
     numFills: number,
-    server: ?Server,
     filler: Filler.filler,
     undo: Array<Mutation>
   };
@@ -293,43 +291,8 @@ class XwordSolver extends Component {
     this.fillEntry = this.fillEntry.bind(this);
     this.clearUncommitted = this.clearUncommitted.bind(this);
   }
-  loadServerPuzzle(id: string) {
-    if (!process.env.REACT_APP_HAS_SERVER)
-      return;
-
-    var self = this;
-    var server = new Server({base_url: process.env.PUBLIC_URL})
-    server
-      .getSolution(id)
-      .then(function(obj) {
-        return server.getPuzzle(obj.PuzzleId)
-      })
-      .then(function(data) {
-        var decoder = new TextDecoder('utf-8');
-        var puz = new Xpf(decoder.decode(data));
-        document.location.hash = id;
-        self.setState({solutionId: id, server: server});
-        self.puzzleLoaded(id, puz);
-        server.connect(id, self.serverUpdate);
-        server.sendSolution(id, -1, '');
-      });
-  }
   loadPuzzle(file: File, filename : ?string) {
-    var self = this;
-    if (process.env.REACT_APP_HAS_SERVER) {
-      var server = new Server({base_url: process.env.PUBLIC_URL})
-      server.uploadPuzzle(file)
-        .then(function(obj) {
-          var id = obj.Id;
-          return server.startSolution(id);
-        })
-        .then(function(obj) {
-          var solutionId = obj.Id;
-          self.loadServerPuzzle(solutionId);
-        });
-    } else {
-      this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
-    }
+    this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
   }
   newPuzzle(width : number, length: number) {
     var maxx = width;
