@@ -25,7 +25,7 @@ basial###maam##
 ncaa#ladle#cite
 edda#adair#omit
 acdc#wakes#abcd`;
-      //expect(result).toEqual(answer.trim());
+      expect(result).toEqual(answer.trim());
       done();
     });
   });

@@ -336,6 +336,13 @@ class Entry {
   }
 }
 
+class StackLevel {
+  saved_entries : Array<any>;
+  saved_cells : Array<any>;
+  filled_word : string;
+  entry : Entry;
+}
+
 class Grid {
 
   entries: Array<Entry>;
@@ -469,37 +476,33 @@ class Grid {
 
   fill() : number {
 
+    var stack = [];
+
+    var stackLevel = new StackLevel();
     this.satisfyAll();
+    stackLevel.entry = this.getNextFillVictim();
+    stack.push(stackLevel);
 
-    // base case: no solution or nothing to do
-    var num_fills = this.numFills();
-    if (num_fills <= 1) {
-      return num_fills;
-    }
+    while (stack.length) {
+      stackLevel = stack.pop();
 
-    var entry = this.getNextFillVictim();
-    while (true) {
-      var saved_entries = this.entries.map(function(e) {
-        return [e, e.checkpoint()];
-      });
-      var saved_cells = this.cells.map(function(c) {
-        return [c, c.checkpoint()];
-      });
+      // if we already filled at this level, restore pre-fill state
+      // and advance to next word
+      if (stackLevel.saved_entries) {
+        stackLevel.saved_cells.map(function(saved) {
+          saved[0].restore(saved[1]);
+        });
+        stackLevel.saved_entries.map(function(saved) {
+          saved[0].restore(saved[1]);
+        });
+        this.used_words.delete(stackLevel.filled_word);
+        stackLevel.entry.nextWord();
+        this.satisfyAll();
+      }
 
-      // fill next best word
-      var fill = entry.fill();
-      if (!fill)
-        break;
-
-      console.log(this.toString());
-
-      this.used_words.add(fill);
-
-      // fill next level down
-      num_fills = this.fill();
+      // finished?
+      var num_fills = this.numFills();
       if (num_fills == 1) {
-        // successful fill at bottom of call stack, fill in the grid and
-        // unwind
         this.entries.forEach(function(e) {
           if (!e.completed()) {
             e.fill();
@@ -508,22 +511,34 @@ class Grid {
         return 1;
       }
 
-      // failed filling in recursion
-      // restore saved wordlist state
-      saved_cells.map(function(saved) {
-        saved[0].restore(saved[1]);
+      // backtrack?
+      if (num_fills == 0) {
+        continue;
+      }
+
+      stackLevel.saved_entries = this.entries.map(function(e) {
+        return [e, e.checkpoint()];
       });
-      saved_entries.map(function(saved) {
-        saved[0].restore(saved[1]);
+      stackLevel.saved_cells = this.cells.map(function(c) {
+        return [c, c.checkpoint()];
       });
 
-      // try next word
-      this.used_words.delete(fill);
-      entry.nextWord();
+      // fill next best word
+      var fill = stackLevel.entry.fill();
+      if (!fill) {
+        continue;
+      }
+
+      stackLevel.filled_word = fill;
+      this.used_words.add(fill);
+
+      // fill next level down
+      stack.push(stackLevel);
+      stackLevel = new StackLevel();
       this.satisfyAll();
+      stackLevel.entry = this.getNextFillVictim();
+      stack.push(stackLevel);
     }
-
-    // no more words left
     return 0;
   }
 
