@@ -147,7 +147,7 @@ class Grid extends Component {
         if (fill === '#' || fill === '.') {
           fill = ' ';
         }
-        if (fill !== ' ')
+        if (entry !== ' ' || black)
           difficulty = '';
 
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
@@ -399,6 +399,8 @@ class XwordSolver extends Component {
             this.state.cells[cell_id].setState({difficulty: 'harder'});
           else if (fillct < 1000)
             this.state.cells[cell_id].setState({difficulty: 'hard'});
+          else
+            this.state.cells[cell_id].setState({difficulty: ''});
         }
     }
     this.setState({fills: result, numFills: num_fills, cells: this.state.cells.slice(), cellLetters: cell_letters});
