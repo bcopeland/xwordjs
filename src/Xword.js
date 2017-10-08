@@ -246,6 +246,15 @@ class Mutation {
   }
 }
 
+function CellLetters(props) {
+  var data = props.histogram;
+  var str = "";
+  for (var [key, value] of data.entries()) {
+    str += key + ": " + value + ", ";
+  }
+  return <span>{str}</span>;
+}
+
 class XwordSolver extends Component {
 
   state: {
@@ -263,6 +272,7 @@ class XwordSolver extends Component {
     modified: boolean,
     fills: Array<string>,
     numFills: number,
+    cellLetters: Map<string, number>,
     filler: Filler.filler,
     undo: Array<Mutation>
   };
@@ -291,6 +301,7 @@ class XwordSolver extends Component {
       version: 1,
       fills: [],
       numFills: 0,
+      cellLetters: new Map(),
       construct: false,
       solutionId: null,
       server: null,
@@ -371,16 +382,18 @@ class XwordSolver extends Component {
 
     var filler = this.state.filler;
     var result = filler.getFills(x, y, dir);
-    var numFills = filler.estimatedFills();
+    var num_fills = filler.estimatedFills();
+    var cell_letters = filler.getCellLetters(x, y);
+    console.log("cell letters: " + JSON.stringify(Array.from(cell_letters)));
 
     for (var i=0; i < this.state.height; i++) {
         for (var j = 0; j < this.state.width; j++) {
           var cell_id = this.state.height * i + j;
           if (this.state.cells[cell_id].isBlack())
             continue;
-          var cell_letters = filler.getCellLetters(i, j);
+          var this_cell_letters = filler.getCellLetters(j, i);
           var fillct = 0;
-          for (const ct of cell_letters.values()) {
+          for (const ct of this_cell_letters.values()) {
             fillct += ct;
           }
           if (fillct < 10)
@@ -391,7 +404,7 @@ class XwordSolver extends Component {
             this.state.cells[cell_id].setState({difficulty: 'hard'});
         }
     }
-    this.setState({fills: result, numFills: numFills, cells: this.state.cells.slice()});
+    this.setState({fills: result, numFills: num_fills, cells: this.state.cells.slice(), cellLetters: cell_letters});
   }
   clearUncommitted() {
     for (var i=0; i < this.state.cells.length; i++) {
@@ -1027,7 +1040,10 @@ class XwordSolver extends Component {
             </div>
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
           </div>
-          <div>Estimated fills: {this.state.numFills}</div>
+          <div>
+            <CellLetters histogram={this.state.cellLetters}/>
+            Estimated fills: {this.state.numFills}
+          </div>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false, false)}/>
         </div>
         <a href="#" onClick={() => this.fill()}>Fill</a>

@@ -497,11 +497,18 @@ class Grid {
       if (!entry)
         continue;
 
+      var alphact = new Map();
       var offset = entry.cellIndex(cell_id);
       for (const f of entry.fills()) {
         var alpha = f.charAt(offset);
-        var ct = result.get(alpha) || 0;
-        result.set(alpha, ct + 1);
+        var ct = alphact.get(alpha) || 0;
+        alphact.set(alpha, ct + 1);
+      }
+      for (var [k, v] of alphact.entries()) {
+        // $FlowFixMe
+        if (!result.has(k) || result.get(k) > v) {
+          result.set(k, v);
+        }
       }
     }
     return result;
