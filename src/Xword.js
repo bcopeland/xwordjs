@@ -4,6 +4,7 @@ import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import { Route, Switch } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown} from 'react-bootstrap';
+import { XwordCell, Cell } from './Cell.js';
 import './Xword.css';
 
 // . manage wordlist
@@ -57,47 +58,6 @@ class XwordClue {
   }
 }
 
-class XwordCell {
-  state: {
-    fill: string,
-    entry: string,
-    committed: boolean,
-    active: boolean,
-    focus: boolean,
-    circled: boolean,
-    number: number,
-    version: number,
-    modified: boolean,
-    free: boolean,
-    difficulty: ?string,
-  };
-
-  constructor(options) {
-    this.state = {
-      fill: '.',
-      entry: ' ',
-      active: false,
-      committed: false,
-      focus: false,
-      circled: false,
-      version: 0,
-      modified: false,
-      free: true,
-      number: 0,
-      difficulty: null,
-    };
-    Object.assign(this.state, options);
-  }
-  setState(newstate) {
-    Object.assign(this.state, newstate);
-  }
-  get(key) : any {
-    return this.state[key];
-  }
-  isBlack() : boolean {
-    return this.state.fill === '#';
-  }
-}
 
 function Title(props) {
   var title = props.title;
@@ -199,44 +159,6 @@ function MobileKeyboard(props) {
   return (
     <div className="xwordjs-keyboard">{rows}</div>
   );
-}
-
-function Cell(props) {
-  var classname="xwordjs-cell";
-  if (props.isTop) {
-    classname += " xwordjs-cell-top";
-  }
-  if (props.isLeft) {
-    classname += " xwordjs-cell-left";
-  }
-  if (props.isActive) {
-    classname += " xwordjs-cell-active";
-  }
-  if (props.isFocus) {
-    if (props.isBlack)
-      classname += " xwordjs-cell-focus-black";
-    else
-      classname += " xwordjs-cell-focus";
-  } else if (props.isBlack) {
-    classname += " xwordjs-cell-black";
-  }
-  var circleclass = "";
-  if (props.isCircled) {
-    circleclass = "xwordjs-cell-circled";
-  }
-  var overlayClass = "xwordjs-cell-overlay";
-  if (props.difficulty !== "") {
-    overlayClass += " xwordjs-cell-difficulty-" + props.difficulty;
-  }
-
-  return <div className={classname} onClick={() => props.onClick(props.id)}>
-            <div className={overlayClass}>
-            <div className={circleclass}>
-              <div className="xwordjs-cell-number">{props.number}</div>
-              <div className="xwordjs-cell-text">{props.value}</div>
-            </div>
-            </div>
-          </div>;
 }
 
 class Mutation {
@@ -687,7 +609,7 @@ class XwordSolver extends Component {
 
     if (!this.state.undo.length)
       return;
-    
+
     mutation = this.state.undo.pop();
 
     var [x, y] = this.cellPos(mutation.start_cell);
