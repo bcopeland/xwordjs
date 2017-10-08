@@ -6,15 +6,21 @@ import { Route, Switch } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown} from 'react-bootstrap';
 import './Xword.css';
 
-// . undo/redo
-// . webworker impl
-// . test fill
-// . menu
+// . manage wordlist
+//  . upload
+//  . save by name
 // . export as xd/puz/pdf
-// . fill specific entry
-//   . don't fill the score!
+// . generate puzzle ids and save them by puzzle id
+// . list puzzles by id
+// . easy copy-paste grid
+// . undo/redo
+//  . typing
+// . menu
 // . hint entry
-// . difficulty grade
+// . show score in wordlist panel
+// . one-look helper
+// . letter histo
+// . optimize
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
