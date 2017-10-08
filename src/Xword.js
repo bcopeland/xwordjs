@@ -3,13 +3,15 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import { Route, Switch } from 'react-router-dom';
-import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton} from 'react-bootstrap';
+import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
 import './Xword.css';
 
 // . manage wordlist
-//  . upload
-//  . save by name
+//  . for now just one wordlist
+//    . if not there, show error dialog on puzzle load w/ link
+//      to load it
+//    . action to change wordlist
 // . export as xd/puz/pdf
 // . generate puzzle ids and save them by puzzle id
 // . list puzzles by id
@@ -183,6 +185,39 @@ function CellLetters(props) {
   return <span>{str}</span>;
 }
 
+class BetterLoadWordlist extends Component {
+  state: {
+    dismissed: boolean,
+  };
+  handleDismiss: Function;
+
+  constructor() {
+    super();
+    this.state = { dismissed: false };
+    this.handleDismiss = this.handleDismiss.bind(this);
+  }
+
+  render() {
+    if (!this.props.visible || this.state.dismissed) {
+      return <span/>;
+    }
+
+    return (
+      <Alert bsStyle="danger" onDismiss={this.handleDismiss}>
+        <h4>Hey, you don't have a wordlist yet!</h4>
+        <p>For autofill to work you need to upload a wordlist into your
+        browser's local storage.  The wordlist stays on your computer and
+        only needs to be uploaded once.
+        </p>
+      </Alert>
+    );
+  }
+
+  handleDismiss() {
+    this.setState({dismissed: true});
+  }
+}
+
 class XwordSolver extends Component {
 
   state: {
@@ -202,6 +237,7 @@ class XwordSolver extends Component {
     numFills: number,
     cellLetters: Map<string, number>,
     filler: Filler.filler,
+    wordlist: Array<string>,
     undo: Array<Mutation>
   };
   closeModal: Function;
@@ -232,6 +268,7 @@ class XwordSolver extends Component {
       construct: false,
       solutionId: null,
       undo: [],
+      wordlist: [],
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
@@ -271,19 +308,12 @@ class XwordSolver extends Component {
     });
     this.resizeScrollPane();
   }
-  loadWordlist() {
-    var self = this;
+  loadWordlist(name: string) : Array<string> {
+    var data = localStorage.getItem("wordlist_" + name);
+    if (!data)
+      return [];
 
-    // $FlowFixMe
-    var url = process.env.PUBLIC_URL + "XwiWordList.txt";
-    var request = new Request(url);
-    fetch(request).then(function(response) {
-      return response.arrayBuffer();
-    }).then(function(data) {
-      // $FlowFixMe
-      var text = new TextDecoder('utf-8').decode(data);
-      self.setState({filler: new Filler.filler('', new Filler.wordlist(text.trim().split("\n")))});
-    });
+    return JSON.parse(data);
   }
   getFillerString() : string {
     var grid = '';
@@ -732,6 +762,8 @@ class XwordSolver extends Component {
         x += xincr; y += yincr;
       }
     }
+    var wordlist = this.loadWordlist("default");
+    this.setState({wordlist: wordlist});
     this.setState({
       'title': title, 'author': author,
       'width': maxx, 'height': maxy, 'cells': cells
@@ -894,7 +926,6 @@ class XwordSolver extends Component {
   }
   componentDidMount() {
     var self = this;
-    this.loadWordlist();
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
   }
   componentWillUnmount() {
@@ -939,6 +970,7 @@ class XwordSolver extends Component {
           undo={() => this.undo()}
           redo={() => alert("not a thing yet")}
           />
+        <BetterLoadWordlist visible={this.state.wordlist.length == 0}/>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
@@ -971,10 +1003,10 @@ function XwordNav(props) {
     <Navbar>
       <DropdownButton title="Actions">
         <MenuItem eventKey={1.1} onSelect={(event, eventKey) => props.processToggle()}>Toggle Blank</MenuItem>
-        <MenuItem divider="true"/>
+        <MenuItem divider={true}/>
         <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.fill()}>Autofill</MenuItem>
         <MenuItem eventKey={1.3} onSelect={(event, eventKey) => props.clearUncommitted()}>Clear hints</MenuItem>
-        <MenuItem divider="true"/>
+        <MenuItem divider={true}/>
         <MenuItem eventKey={1.4} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
         <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.redo()}>Redo</MenuItem>
       </DropdownButton>
@@ -982,10 +1014,56 @@ function XwordNav(props) {
   );
 }
 
+class XwordWordlistChooser extends Component
+{
+  saveWordlist: Function;
+
+  constructor() {
+    super();
+    this.saveWordlist = this.saveWordlist.bind(this);
+  }
+  render() {
+    return (
+      <div>
+        <h4>Upload Wordlist</h4>
+        <p>
+        Select your wordlist here.  Acceptable files are ascii format
+        with word and score delimited by semicolons, one per line.
+        For example:
+        <pre>{`apple;20
+banana;30
+zanzibar;60
+`}</pre>
+
+        The file remains local to your computer and is not uploaded
+        anywhere else.</p>
+
+        <FileInput onChange={this.saveWordlist} />
+      </div>
+    );
+  }
+  loadWordlistFromUrl(url, filename) {
+    var self = this;
+
+    var request = new Request(url);
+    fetch(request).then(function(response) {
+      return response.arrayBuffer();
+    }).then(function(data) {
+      // $FlowFixMe
+      var text = new TextDecoder('utf-8').decode(data);
+      localStorage.setItem("wordlist_default", JSON.stringify(text.trim().split("\n")));
+    });
+  }
+  saveWordlist(file: File, filename: ?string) {
+    this.loadWordlistFromUrl(window.URL.createObjectURL(file), filename);
+  }
+}
+
 function XwordMainPanel() {
   return (
     <Switch>
       <Route exact path="/" component={XwordSolver}/>
+      <Route exact path="/wordlist/upload" component={XwordWordlistChooser}/>
     </Switch>
   );
 }
