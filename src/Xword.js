@@ -524,17 +524,6 @@ class XwordSolver extends Component {
     this.saveStoredData();
     this.navPrev();
   }
-  isCorrect() {
-    for (var i=0; i < this.state.cells.length; i++) {
-      var cell = this.state.cells[i];
-      var fill = cell.get('fill');
-      var entry = cell.get('entry');
-
-      if (fill !== '#' && entry !== fill)
-        return false;
-    }
-    return true;
-  }
   processKeyCode(keyCode: number, shift: boolean, ctrl: boolean)
   {
     // ctrl-z
