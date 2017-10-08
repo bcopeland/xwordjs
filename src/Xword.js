@@ -21,6 +21,7 @@ import './Xword.css';
 // . one-look helper
 // . letter histo
 // . optimize
+// . mobile keyboard always on top
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
@@ -979,20 +980,15 @@ function XwordLoad(props) {
 function XwordNav(props) {
   return (
     <Navbar>
-      <Navbar.Header>
-        <Navbar.Toggle />
-      </Navbar.Header>
-      <Navbar.Collapse>
-        <DropdownButton title="Actions">
-          <MenuItem eventKey={1.1} onSelect={(event, eventKey) => props.processToggle()}>Toggle Blank</MenuItem>
-          <MenuItem divider="true"/>
-          <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.fill()}>Autofill</MenuItem>
-          <MenuItem eventKey={1.3} onSelect={(event, eventKey) => props.clearUncommitted()}>Clear hints</MenuItem>
-          <MenuItem divider="true"/>
-          <MenuItem eventKey={1.4} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
-          <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.redo()}>Redo</MenuItem>
-        </DropdownButton>
-      </Navbar.Collapse>
+      <DropdownButton title="Actions">
+        <MenuItem eventKey={1.1} onSelect={(event, eventKey) => props.processToggle()}>Toggle Blank</MenuItem>
+        <MenuItem divider="true"/>
+        <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.fill()}>Autofill</MenuItem>
+        <MenuItem eventKey={1.3} onSelect={(event, eventKey) => props.clearUncommitted()}>Clear hints</MenuItem>
+        <MenuItem divider="true"/>
+        <MenuItem eventKey={1.4} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
+        <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.redo()}>Redo</MenuItem>
+      </DropdownButton>
     </Navbar>
   );
 }
