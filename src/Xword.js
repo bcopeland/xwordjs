@@ -278,7 +278,6 @@ class XwordSolver extends Component {
   };
   closeModal: Function;
   showAnswers: Function;
-  serverUpdate: Function;
   clearUncommitted: Function;
   fill: Function;
   fillEntry: Function;
@@ -304,12 +303,10 @@ class XwordSolver extends Component {
       cellLetters: new Map(),
       construct: false,
       solutionId: null,
-      server: null,
       undo: [],
     }
     this.closeModal = this.closeModal.bind(this);
     this.showAnswers = this.showAnswers.bind(this);
-    this.serverUpdate = this.serverUpdate.bind(this);
     this.fill = this.fill.bind(this);
     this.fillEntry = this.fillEntry.bind(this);
     this.clearUncommitted = this.clearUncommitted.bind(this);
@@ -956,19 +953,6 @@ class XwordSolver extends Component {
     }
     var newcells = this.state.cells.slice();
     this.setState({'cells': newcells});
-  }
-  serverUpdate(json: Object) {
-    console.log("a server update happened...");
-    for (var i = 0; i < json.Entries.length; i++) {
-      var ch = json.Entries[i].Value;
-      var version = json.Entries[i].Version;
-
-      var cell = this.state.cells[i];
-      if (cell && !cell.isBlack() && version > cell.get('version')) {
-        cell.setState({entry: ch, version: version});
-      }
-    }
-    this.setState({version: json.Version});
   }
   fillEntry(value: string) {
     var pos = this.cellPos(this.state.activecell);
