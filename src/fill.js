@@ -247,6 +247,15 @@ class Entry {
     return pattern.indexOf(".") === -1;
   }
 
+  cellIndex(cell_id: number) : number
+  {
+    for (var i = 0; i < this.cells.length; i++) {
+      if (this.cells[i].getId() == cell_id)
+        return i;
+    }
+    return -1;
+  }
+
   recomputeValidLetters() : void
   {
     var fills;
@@ -406,6 +415,7 @@ class Grid {
         }
       }
     }
+    this.satisfyAll();
   }
 
   satisfyAll() : void {
@@ -457,8 +467,6 @@ class Grid {
   }
 
   getFills(x: number, y: number, direction: number) : Array<string> {
-    this.satisfyAll();
-
     // get entry from position
     if (x < 0 || x >= this.width || y < 0 || y >= this.height ||
         direction < DIR_ACROSS || direction > DIR_DOWN) {
@@ -472,6 +480,31 @@ class Grid {
       return [];
 
     return entry.fills();
+  }
+
+  getCellLetters(x: number, y: number) : Map<string,number> {
+    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+      throw "out of range";
+    }
+
+    var cell_id = this.width * y + x;
+    var cell = this.cells[cell_id];
+    var across_entry = cell.entry(0);
+    var down_entry = cell.entry(1);
+    var result = new Map();
+
+    for (const entry of [across_entry, down_entry]) {
+      if (!entry)
+        continue;
+
+      var offset = entry.cellIndex(cell_id);
+      for (const f of entry.fills()) {
+        var alpha = f.charAt(offset);
+        var ct = result.get(alpha) || 0;
+        result.set(alpha, ct + 1);
+      }
+    }
+    return result;
   }
 
   fillStep(stack) : boolean
@@ -605,7 +638,7 @@ class Filler {
     this.grid = new Grid(template, this.wordlist);
   }
 
-  fillAsync(callback) : void {
+  fillAsync(callback: Function) : void {
     this.grid.fillAsync(callback);
   }
 
@@ -616,6 +649,10 @@ class Filler {
 
   getFills(x: number, y: number, direction: number) {
     return this.grid.getFills(x, y, direction);
+  }
+
+  getCellLetters(x: number, y: number) : Map<string, number> {
+    return this.grid.getCellLetters(x, y);
   }
 
   estimatedFills() : number {

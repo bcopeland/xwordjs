@@ -84,6 +84,23 @@
   background-color: #a0a0a0;
 }
 
+.xwordjs-cell-overlay {
+  width: 4vh;
+  height: 4vh;
+}
+
+.xwordjs-cell-difficulty-hard {
+  background-color: rgba(255,0,0,0.2);
+}
+
+.xwordjs-cell-difficulty-harder {
+  background-color: rgba(255,0,0,0.4);
+}
+
+.xwordjs-cell-difficulty-hardest {
+  background-color: rgba(255,0,0,0.8);
+}
+
 
 .xwordjs-fill-list-container {
   display: flex;

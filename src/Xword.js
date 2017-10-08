@@ -63,6 +63,7 @@ class XwordCell {
     version: number,
     modified: boolean,
     free: boolean,
+    difficulty: ?string,
   };
 
   constructor(options) {
@@ -77,6 +78,7 @@ class XwordCell {
       modified: false,
       free: true,
       number: 0,
+      difficulty: null,
     };
     Object.assign(this.state, options);
   }
@@ -139,14 +141,18 @@ class Grid extends Component {
         var focus = this.props.cells[ind].get('focus');
         var circled = this.props.cells[ind].get('circled');
         var number = this.props.cells[ind].get('number') || '';
+        var difficulty = this.props.cells[ind].get('difficulty') || '';
         var black = fill === '#';
 
         if (fill === '#' || fill === '.') {
           fill = ' ';
         }
+        if (fill !== ' ')
+          difficulty = '';
+
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
-         isCircled={circled}
+         isCircled={circled} difficulty={difficulty}
          isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(parseInt(x.substring(5), 10))}/>;
         row_cells.push(cell);
@@ -212,11 +218,17 @@ function Cell(props) {
   if (props.isCircled) {
     circleclass = "xwordjs-cell-circled";
   }
+  var overlayClass = "xwordjs-cell-overlay";
+  if (props.difficulty !== "") {
+    overlayClass += " xwordjs-cell-difficulty-" + props.difficulty;
+  }
 
   return <div className={classname} onClick={() => props.onClick(props.id)}>
+            <div className={overlayClass}>
             <div className={circleclass}>
               <div className="xwordjs-cell-number">{props.number}</div>
               <div className="xwordjs-cell-text">{props.value}</div>
+            </div>
             </div>
           </div>;
 }
@@ -361,7 +373,25 @@ class XwordSolver extends Component {
     var result = filler.getFills(x, y, dir);
     var numFills = filler.estimatedFills();
 
-    this.setState({fills: result, numFills: numFills});
+    for (var i=0; i < this.state.height; i++) {
+        for (var j = 0; j < this.state.width; j++) {
+          var cell_id = this.state.height * i + j;
+          if (this.state.cells[cell_id].isBlack())
+            continue;
+          var cell_letters = filler.getCellLetters(i, j);
+          var fillct = 0;
+          for (const ct of cell_letters.values()) {
+            fillct += ct;
+          }
+          if (fillct < 10)
+            this.state.cells[cell_id].setState({difficulty: 'hardest'});
+          else if (fillct < 100)
+            this.state.cells[cell_id].setState({difficulty: 'harder'});
+          else if (fillct < 1000)
+            this.state.cells[cell_id].setState({difficulty: 'hard'});
+        }
+    }
+    this.setState({fills: result, numFills: numFills, cells: this.state.cells.slice()});
   }
   clearUncommitted() {
     for (var i=0; i < this.state.cells.length; i++) {
@@ -810,6 +840,7 @@ class XwordSolver extends Component {
     // update filler state
     var grid = this.getFillerString();
     var filler = this.state.filler;
+    console.log("update grid");
     filler.updateGrid(grid);
   }
   readStoredData()
