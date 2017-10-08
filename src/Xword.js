@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import { Route, Switch } from 'react-router-dom';
-import {Navbar, Nav, MenuItem, NavDropdown} from 'react-bootstrap';
+import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
 import './Xword.css';
 
@@ -16,7 +16,6 @@ import './Xword.css';
 // . easy copy-paste grid
 // . undo/redo
 //  . typing
-// . menu
 // . hint entry
 // . show score in wordlist panel
 // . one-look helper
@@ -943,7 +942,13 @@ class XwordSolver extends Component {
     }
     return (
       <div className="XwordMain">
-        <XwordNav processToggle={() => this.toggleBlank()} undo={() => this.undo()}/>
+        <XwordNav
+          processToggle={() => this.toggleBlank()}
+          fill={() => this.fill()}
+          clearUncommitted={() => this.clearUncommitted()}
+          undo={() => this.undo()}
+          redo={() => alert("not a thing yet")}
+          />
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
@@ -960,9 +965,6 @@ class XwordSolver extends Component {
           </div>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false, false)}/>
         </div>
-        <a href="#" onClick={() => this.fill()}>Fill</a>
-        <hr/>
-        <a href="#" onClick={() => this.clearUncommitted()}>Clear uncommitted entries</a>
       </div>
     );
   }
@@ -981,10 +983,15 @@ function XwordNav(props) {
         <Navbar.Toggle />
       </Navbar.Header>
       <Navbar.Collapse>
-        <Nav>
+        <DropdownButton title="Actions">
           <MenuItem eventKey={1.1} onSelect={(event, eventKey) => props.processToggle()}>Toggle Blank</MenuItem>
-          <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
-        </Nav>
+          <MenuItem divider="true"/>
+          <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.fill()}>Autofill</MenuItem>
+          <MenuItem eventKey={1.3} onSelect={(event, eventKey) => props.clearUncommitted()}>Clear hints</MenuItem>
+          <MenuItem divider="true"/>
+          <MenuItem eventKey={1.4} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
+          <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.redo()}>Redo</MenuItem>
+        </DropdownButton>
       </Navbar.Collapse>
     </Navbar>
   );
