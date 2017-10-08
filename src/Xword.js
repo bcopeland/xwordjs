@@ -375,18 +375,21 @@ class XwordSolver extends Component {
     var grid = this.getFillerString();
 
     var filler = this.state.filler;
-    var result = filler.fill();
-    var rows = result.trim().split("\n");
-    for (var i = 0; i < rows.length; i++) {
-      for (var j = 0; j < rows[i].length; j++) {
-        var cell_id = this.state.height * i + j;
-        var entry = rows[i].charAt(j);
-        if (entry === '#' || entry === '.')
-          continue;
-        this.state.cells[cell_id].setState({entry: entry});
+    var self = this;
+    filler.fillAsync(function(result, next) {
+      var rows = result.trim().split("\n");
+      for (var i = 0; i < rows.length; i++) {
+        for (var j = 0; j < rows[i].length; j++) {
+          var cell_id = self.state.height * i + j;
+          var entry = rows[i].charAt(j);
+          if (entry === '#' || entry === '.')
+            continue;
+          self.state.cells[cell_id].setState({entry: entry});
+        }
       }
-    }
-    this.setState({'cells': this.state.cells.slice()});
+      self.setState({'cells': self.state.cells.slice()});
+      window.setTimeout(next, 0);
+    });
   }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;

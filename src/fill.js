@@ -474,6 +474,95 @@ class Grid {
     return entry.fills();
   }
 
+  fillStep(stack) : boolean
+  {
+    var stackLevel = stack.pop();
+
+    // if we already filled at this level, restore pre-fill state
+    // and advance to next word
+    if (stackLevel.saved_entries) {
+      stackLevel.saved_cells.map(function(saved) {
+        saved[0].restore(saved[1]);
+      });
+      stackLevel.saved_entries.map(function(saved) {
+        saved[0].restore(saved[1]);
+      });
+      this.used_words.delete(stackLevel.filled_word);
+      stackLevel.entry.nextWord();
+      this.satisfyAll();
+    }
+
+    // finished?
+    var num_fills = this.numFills();
+    if (num_fills == 1) {
+      this.entries.forEach(function(e) {
+        if (!e.completed()) {
+          e.fill();
+        }
+      });
+      return true;
+    }
+
+    // backtrack?
+    if (num_fills == 0) {
+      return false;
+    }
+
+    stackLevel.saved_entries = this.entries.map(function(e) {
+      return [e, e.checkpoint()];
+    });
+    stackLevel.saved_cells = this.cells.map(function(c) {
+      return [c, c.checkpoint()];
+    });
+
+    // fill next best word
+    var fill = stackLevel.entry.fill();
+    if (!fill) {
+      return false;
+    }
+
+    stackLevel.filled_word = fill;
+    this.used_words.add(fill);
+
+    // fill next level down
+    stack.push(stackLevel);
+    stackLevel = new StackLevel();
+    this.satisfyAll();
+    stackLevel.entry = this.getNextFillVictim();
+    stack.push(stackLevel);
+    return false;
+  }
+
+  // return [stack, done]
+  fillOne(stack: ?Array<any>) : Array<any> {
+
+    if (!stack) {
+      stack = [];
+
+      var stackLevel = new StackLevel();
+      this.satisfyAll();
+      stackLevel.entry = this.getNextFillVictim();
+      stack.push(stackLevel);
+    }
+
+    if (!stack.length)
+      return [stack, true];
+
+    var result = this.fillStep(stack);
+    return [stack, result];
+  }
+
+  fillAsync(callback, state) {
+    var newstate, done;
+    var self = this;
+    [newstate, done] = this.fillOne(state);
+    callback(this.toString(), function() {
+      if (!done) {
+        self.fillAsync(callback, newstate);
+      }
+    });
+  }
+
   fill() : number {
 
     var stack = [];
@@ -484,60 +573,8 @@ class Grid {
     stack.push(stackLevel);
 
     while (stack.length) {
-      stackLevel = stack.pop();
-
-      // if we already filled at this level, restore pre-fill state
-      // and advance to next word
-      if (stackLevel.saved_entries) {
-        stackLevel.saved_cells.map(function(saved) {
-          saved[0].restore(saved[1]);
-        });
-        stackLevel.saved_entries.map(function(saved) {
-          saved[0].restore(saved[1]);
-        });
-        this.used_words.delete(stackLevel.filled_word);
-        stackLevel.entry.nextWord();
-        this.satisfyAll();
-      }
-
-      // finished?
-      var num_fills = this.numFills();
-      if (num_fills == 1) {
-        this.entries.forEach(function(e) {
-          if (!e.completed()) {
-            e.fill();
-          }
-        });
+      if (this.fillStep(stack))
         return 1;
-      }
-
-      // backtrack?
-      if (num_fills == 0) {
-        continue;
-      }
-
-      stackLevel.saved_entries = this.entries.map(function(e) {
-        return [e, e.checkpoint()];
-      });
-      stackLevel.saved_cells = this.cells.map(function(c) {
-        return [c, c.checkpoint()];
-      });
-
-      // fill next best word
-      var fill = stackLevel.entry.fill();
-      if (!fill) {
-        continue;
-      }
-
-      stackLevel.filled_word = fill;
-      this.used_words.add(fill);
-
-      // fill next level down
-      stack.push(stackLevel);
-      stackLevel = new StackLevel();
-      this.satisfyAll();
-      stackLevel.entry = this.getNextFillVictim();
-      stack.push(stackLevel);
     }
     return 0;
   }
@@ -566,6 +603,10 @@ class Filler {
 
   updateGrid(template : string) {
     this.grid = new Grid(template, this.wordlist);
+  }
+
+  fillAsync(callback) : void {
+    this.grid.fillAsync(callback);
   }
 
   fill() : string {
