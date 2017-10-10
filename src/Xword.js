@@ -2,7 +2,7 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
-import { Route, Switch } from 'react-router-dom';
+import { Route, Switch, Link } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
 import './Xword.css';
@@ -224,6 +224,7 @@ class XwordSolver extends Component {
     height: number,
     width: number,
     cells: Array<XwordCell>,
+    puzzleId: string,
     title: string,
     author: string,
     activecell: number,
@@ -238,6 +239,7 @@ class XwordSolver extends Component {
     cellLetters: Map<string, number>,
     filler: Filler.filler,
     wordlist: Array<string>,
+    puzzleId: string,
     undo: Array<Mutation>
   };
   closeModal: Function;
@@ -249,16 +251,16 @@ class XwordSolver extends Component {
   constructor() {
     super();
     this.state = {
-      'height': 15,
-      'width': 15,
-      'cells': [],
-      'title': '',
-      'author': '',
-      'activecell': 0,
-      'direction': 'A',
-      'cell_to_clue_table': [],
-      'clue_to_cell_table': [],
-      'dismissed_modal': false,
+      height: 15,
+      width: 15,
+      cells: [],
+      title: '',
+      author: '',
+      activecell: 0,
+      direction: 'A',
+      cell_to_clue_table: [],
+      clue_to_cell_table: [],
+      dismissed_modal: false,
       filler: new Filler.filler('', new Filler.wordlist([])),
       modified: false,
       version: 1,
@@ -267,6 +269,7 @@ class XwordSolver extends Component {
       cellLetters: new Map(),
       construct: false,
       solutionId: null,
+      puzzleId: '',
       undo: [],
       wordlist: [],
     }
@@ -300,13 +303,15 @@ class XwordSolver extends Component {
 
     var datestr = year + "-" + month + "-" + day;
     var title = 'Untitled - ' + datestr;
+    var puzzleId = this.generateId();
 
     this.setState({
-      'title': title, 'author': 'unknown',
-      'width': maxx, 'height': maxy, 'cells': cells,
+      puzzleId: puzzleId, title: title, author: 'unknown',
+      width: maxx, height: maxy, cells: cells,
       construct: true
     });
-    this.resizeScrollPane();
+    this.saveStoredData();
+    this.props.history.replace("/puzzle/" + puzzleId);
   }
   loadWordlist(name: string) : Array<string> {
     var data = localStorage.getItem("wordlist_" + name);
@@ -391,6 +396,36 @@ class XwordSolver extends Component {
       window.setTimeout(next, 0);
     });
   }
+  loadPuzzleFromId(id: string) {
+    var data = localStorage.getItem("construct_" + id);
+    if (!data)
+      throw "puzzle not found";
+
+    data = JSON.parse(data);
+    var maxx = data.width;
+    var maxy = data.height;
+    var cells = new Array(maxx * maxy);
+    for (var i=0; i < maxx * maxy; i++) {
+      cells[i] = new XwordCell();
+      cells[i].setState(data.cells[i]);
+    }
+
+    var wordlist = this.loadWordlist("default");
+    this.setState({
+      puzzleId: id,
+      title: data.title,
+      author: data.author,
+      height: data.height,
+      width: data.width,
+      cells: cells,
+      wordlist: wordlist,
+      filler: new Filler.filler('', new Filler.wordlist(wordlist)),
+      construct: true,
+    });
+    console.log("update grid from load");
+    this.state.filler.updateGrid(this.getFillerString());
+    this.resizeScrollPane();
+  }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
     var request = new Request(url);
@@ -403,15 +438,15 @@ class XwordSolver extends Component {
         var decoder = new TextDecoder('utf-8');
         // $FlowFixMe decode handles ArrayBuffer too
         puz = new Xd(decoder.decode(data));
-        self.puzzleLoaded(url, puz);
+        self.puzzleLoaded(puz);
       } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
         // $FlowFixMe decode handles ArrayBuffer too
         puz = new Xpf(decoder.decode(data));
-        self.puzzleLoaded(url, puz);
+        self.puzzleLoaded(puz);
       } else {
         puz = new Puz(data);
-        self.puzzleLoaded(url, puz);
+        self.puzzleLoaded(puz);
       }
     });
   }
@@ -642,6 +677,7 @@ class XwordSolver extends Component {
       this.state.cells[cell_id].setState({entry: value[i], committed: true});
     }
     this.setState({'cells': this.state.cells.slice(), 'undo': this.state.undo.slice()});
+    this.state.filler.updateGrid(this.getFillerString());
   }
   toggleBlank() {
     var i = this.state.activecell;
@@ -669,7 +705,7 @@ class XwordSolver extends Component {
       this.selectCell(i, this.state.direction);
     }
   }
-  puzzleLoaded(url: string, puz: Object) {
+  puzzleLoaded(puz: Object) {
     var grid = puz.grid;
     var flags = puz.flags;
     var maxx = grid[0].length;
@@ -762,15 +798,27 @@ class XwordSolver extends Component {
         x += xincr; y += yincr;
       }
     }
-    var wordlist = this.loadWordlist("default");
-    this.setState({wordlist: wordlist});
+    var puzzleId = this.state.puzzleId;
+    if (!puzzleId) {
+      puzzleId = this.generateId();
+    }
     this.setState({
-      'title': title, 'author': author,
-      'width': maxx, 'height': maxy, 'cells': cells
+      puzzleId: puzzleId,
+      title: title, author: author,
+      width: maxx, height: maxy, cells: cells
     });
-    this.loadStoredData();
-    this.selectCell(0, 'A', true);
-    this.resizeScrollPane();
+    this.saveStoredData();
+    this.props.history.replace("/puzzle/" + puzzleId);
+  }
+  generateId()
+  {
+    const len = 12;
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
+    var str = "";
+    for (let i = 0; i < len; i++) {
+      str += chars.charAt(Math.random() * chars.length);
+    }
+    return str;
   }
   resizeScrollPane()
   {
@@ -778,6 +826,9 @@ class XwordSolver extends Component {
     var gridelem = document.getElementById("xwordjs-grid-inner");
     var cluediv = document.getElementById("xwordjs-fill-list-container");
     var cluelist = document.getElementsByClassName("xwordjs-fill-list");
+    if (!gridelem)
+      return;
+
     var gridHeight = window.getComputedStyle(gridelem).getPropertyValue("height");
 
     if (cluediv)
@@ -791,10 +842,19 @@ class XwordSolver extends Component {
   }
   saveStoredData()
   {
-    var key = this.state.title;
+    var key = "construct_" + this.state.puzzleId;
     console.log("saving data: " + key);
     var data = {
-      entries: this.state.cells.map((x) => x.state.entry),
+      title: this.state.title,
+      author: this.state.author,
+      height: this.state.height,
+      width: this.state.width,
+      cells: this.state.cells.map(function(x) {
+        return {
+          fill: x.state.fill,
+          entry: x.state.entry,
+        }
+      }),
     };
     localStorage.setItem(key, JSON.stringify(data));
 
@@ -806,7 +866,7 @@ class XwordSolver extends Component {
   }
   readStoredData()
   {
-    var key = this.state.title;
+    var key = "construct_" + this.state.puzzleId;
     console.log("loading data: " + key);
     var data = localStorage.getItem(key);
     if (!data)
@@ -820,10 +880,8 @@ class XwordSolver extends Component {
     if (!data)
       return;
 
-    var entries = data.entries;
-    var elapsed = data.elapsed;
-    for (var i=0; i < entries.length; i++) {
-      this.state.cells[i].setState({entry: entries[i]});
+    for (var i=0; i < data.cells.length; i++) {
+      this.state.cells[i].setState(data.cells[i]);
     }
     this.setState({modified: true})
     this.setState({cells: this.state.cells});
@@ -926,6 +984,10 @@ class XwordSolver extends Component {
   }
   componentDidMount() {
     var self = this;
+    var id = this.props.match.params.id;
+    if (id) {
+      this.loadPuzzleFromId(id);
+    }
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
   }
   componentWillUnmount() {
@@ -1052,6 +1114,7 @@ zanzibar;60
       // $FlowFixMe
       var text = new TextDecoder('utf-8').decode(data);
       localStorage.setItem("wordlist_default", JSON.stringify(text.trim().split("\n")));
+      self.props.history.push("/");
     });
   }
   saveWordlist(file: File, filename: ?string) {
@@ -1063,6 +1126,7 @@ function XwordMainPanel() {
   return (
     <Switch>
       <Route exact path="/" component={XwordSolver}/>
+      <Route path="/puzzle/:id" component={XwordSolver}/>
       <Route exact path="/wordlist/upload" component={XwordWordlistChooser}/>
     </Switch>
   );
