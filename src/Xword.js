@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import { Route, Switch, Link } from 'react-router-dom';
-import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert} from 'react-bootstrap';
+import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert, Button, ButtonToolbar} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
 import './Xword.css';
 
@@ -209,6 +209,8 @@ class BetterLoadWordlist extends Component {
         browser's local storage.  The wordlist stays on your computer and
         only needs to be uploaded once.
         </p>
+
+        <Link to="/wordlist/upload"><Button>Add Wordlist</Button></Link>
       </Alert>
     );
   }
@@ -998,28 +1000,9 @@ class XwordSolver extends Component {
     if (this.state.cells.length === 0) {
       return (
         <div className="XwordMain">
-          <div className="xwordjs-text-box">
-          <h1>XwordJS</h1>
-
-          <p>
-          Upload a crossword puzzle here (.puz, .xpf, or .xd format) and then
-          you can edit the puzzle.  The file remains local to your computer
-          and not uploaded anywhere else.
-          </p>
-
-          <FileInput onChange={(x, filename) => this.loadPuzzle(x, filename)} />
-
-          <p>Or start a new puzzle.</p>
-          <form>
-            Width: <input type="number" id="newwidth" value="15"/>
-            Height: <input type="number" id="newheight" value="15"/>
-            <input type="button" onClick={() => this.newPuzzle(
-                // $FlowFixMe
-                document.getElementById("newwidth").value,
-                // $FlowFixMe
-                document.getElementById("newheight").value)} value="Start"/>
-          </form>
-          </div>
+          <XwordChooser
+            onChange={(f, name) => this.loadPuzzle(f, name)}
+            onNewPuzzle={(x, y) => this.newPuzzle(x, y)}/>
         </div>
       );
     }
@@ -1032,7 +1015,7 @@ class XwordSolver extends Component {
           undo={() => this.undo()}
           redo={() => alert("not a thing yet")}
           />
-        <BetterLoadWordlist visible={this.state.wordlist.length == 0}/>
+        <BetterLoadWordlist visible={this.state.wordlist.length == 0 || true}/>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
@@ -1075,6 +1058,32 @@ function XwordNav(props) {
     </Navbar>
   );
 }
+
+const XwordChooser = props => (
+  <div className="xwordjs-text-box">
+    <h1>XwordJS</h1>
+
+    <p>
+    Upload a crossword puzzle here (.puz, .xpf, or .xd format) and then
+    you can edit the puzzle.  The file remains local to your computer
+    and not uploaded anywhere else.
+    </p>
+
+    <FileInput onChange={props.onChange} />
+
+    <p>Or start a new puzzle.</p>
+    <form>
+    Width: <input type="number" id="newwidth" defaultValue="15"/>
+    Height: <input type="number" id="newheight" defaultValue="15"/>
+    <input type="button" onClick={() => props.onNewPuzzle(
+        // $FlowFixMe
+        document.getElementById("newwidth").value,
+        // $FlowFixMe
+        document.getElementById("newheight").value)}
+        value="Start"/>
+    </form>
+  </div>
+);
 
 class XwordWordlistChooser extends Component
 {
