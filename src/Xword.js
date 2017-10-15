@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
+import Cell from './Cell.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch, Link } from 'react-router-dom';
 import { DropdownButton, MenuItem, ProgressBar } from 'react-bootstrap';
@@ -243,43 +244,6 @@ function MobileKeyboard(props) {
   return (
     <div className="xwordjs-keyboard">{rows}</div>
   );
-}
-
-function Cell(props) {
-  var classname="xwordjs-cell";
-  if (props.isBlack) {
-    classname += " xwordjs-cell-black";
-  }
-  if (props.isTop) {
-    classname += " xwordjs-cell-top";
-  }
-  if (props.isLeft) {
-    classname += " xwordjs-cell-left";
-  }
-  if (props.isFocus) {
-    classname += " xwordjs-cell-focus";
-    if (props.isIncorrect)
-      classname += "-incorrect";
-  } else if (props.isActive) {
-    classname += " xwordjs-cell-active";
-    if (props.isIncorrect)
-      classname += "-incorrect";
-  }
-
-  if (props.isIncorrect)
-    classname += " xwordjs-cell-incorrect";
-
-  var circleclass = "";
-  if (props.isCircled) {
-    circleclass = "xwordjs-cell-circled";
-  }
-
-  return <div className={classname} onClick={() => props.onClick(props.id)}>
-            <div className={circleclass}>
-              <div className="xwordjs-cell-number">{props.number}</div>
-              <div className="xwordjs-cell-text">{props.value}</div>
-            </div>
-          </div>;
 }
 
 class XwordSolver extends Component {
@@ -876,9 +840,10 @@ class XwordSolver extends Component {
 
     var x_incr = !dind;
     var y_incr = !x_incr;
+    var cell;
 
     for (; x < this.state.width && y < this.state.height; ) {
-      var cell = this.state.cells[this.state.width * y + x];
+      cell = this.state.cells[this.state.width * y + x];
       if (cell.isBlack())
         break;
 
@@ -887,7 +852,7 @@ class XwordSolver extends Component {
       y += y_incr;
     }
 
-    var cell = this.state.cells[this.state.activecell];
+    cell = this.state.cells[this.state.activecell];
     cell.setState({'entry': cell.get('fill')});
     this.setState({'cells': this.state.cells.slice()});
   }
@@ -906,7 +871,7 @@ class XwordSolver extends Component {
     for (var i=0; i < this.state.cells.length; i++) {
       var cell = this.state.cells[i];
       if (!cell.isBlack()) {
-        if (cell.get('entry') != ' ' &&
+        if (cell.get('entry') !== ' ' &&
             cell.get('entry') !== cell.get('fill')) {
           cell.setState({incorrect: true});
         }
