@@ -4,6 +4,7 @@ import Modal from 'react-modal';
 import FileInput from './FileInput.js';
 import Server from './Server.js';
 import Cell from './Cell.js';
+import Clues from './Clues.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch, Link } from 'react-router-dom';
 import { DropdownButton, MenuItem, ProgressBar } from 'react-bootstrap';
@@ -128,57 +129,6 @@ function ClueBar(props) {
     }
   }
   return <div className={"xwordjs-clue-bar"}>{text}</div>;
-}
-
-function Clue(props) {
-  var clue = props.value;
-  var contents = clue.get('number') + ". " + clue.get('clue');
-  var extraClass = "";
-
-  if (clue.get('active'))
-    extraClass = " xwordjs-clue-active";
-  else if (clue.get('crossActive'))
-    extraClass = " xwordjs-clue-cross-active";
-
-  return (
-    <div className={"xwordjs-clue" + extraClass} id={"clue_" + clue.get('index')} onClick={() => props.onClick(clue)}>{contents}</div>
-  );
-}
-
-function Cluelist(props) {
-  var list = [];
-  for (var i=0; i < props.value.length; i++) {
-    var clue = props.value[i];
-    list.push(<Clue key={"clue_" + i} onClick={(x) => props.selectClue(x)} value={clue}/>);
-  }
-  return (
-    <div>
-    <h3>{props.title}</h3>
-    <div className="xwordjs-cluelist">
-    {list}
-    </div>
-    </div>
-  );
-}
-
-function Clues(props) {
-  var across = [];
-  var down = [];
-  for (var i=0; i < props.value.length; i++) {
-    var clue = props.value[i];
-
-    if (clue.get('direction') === 'A') {
-      across.push(props.value[i]);
-    } else {
-      down.push(props.value[i]);
-    }
-  }
-  return(
-    <div id="xwordjs-cluelist-container" className="xwordjs-cluelist-container">
-      <Cluelist selectClue={props.selectClue} value={across} title="Across"/>
-      <Cluelist selectClue={props.selectClue} value={down} title="Down"/>
-    </div>
-  );
 }
 
 class Grid extends Component {
