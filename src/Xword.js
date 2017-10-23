@@ -1015,7 +1015,7 @@ class XwordSolver extends Component {
           undo={() => this.undo()}
           redo={() => alert("not a thing yet")}
           />
-        <BetterLoadWordlist visible={this.state.wordlist.length == 0 || true}/>
+        <BetterLoadWordlist visible={this.state.wordlist.length == 0}/>
         <div className="xwordjs-vertical-container">
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
