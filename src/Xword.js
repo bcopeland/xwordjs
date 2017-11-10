@@ -771,6 +771,10 @@ class XwordSolver extends Component {
       oldcell.setState({focus: false});
       cell.setState({focus: true});
     }
+    e = document.getElementById("cell_" + cell_id);
+    if (e)
+      scrollIntoViewIfNeeded(e);
+
     this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction});
   }
   revealCell()

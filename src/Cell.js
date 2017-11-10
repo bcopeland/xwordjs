@@ -30,7 +30,7 @@ function Cell(props) {
     circleclass = "xwordjs-cell-circled";
   }
 
-  return <div className={classname} onClick={() => props.onClick(props.id)}>
+  return <div className={classname} id={props.id} onClick={() => props.onClick(props.id)}>
             <div className={circleclass}>
               <div className="xwordjs-cell-number">{props.number}</div>
               <div className="xwordjs-cell-text">{props.value}</div>
