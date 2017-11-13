@@ -188,13 +188,17 @@
   font-size: 1.25em;
 }
 
+.xwordjs-button-spacer {
+  padding: 5px;
+}
+
 .xwordjs-text-box {
   padding: 10px;
   width: 50vw;
 }
 
 /* mobile settings */
-@media screen and (max-width:600px) {
+@media screen and (max-width:500px) {
   .xwordjs-cluelist-container {
     display: none;
   }
@@ -224,7 +228,7 @@
 }
 
 /* desktop settings */
-@media screen and (min-width:600px) {
+@media screen and (min-width:500px) {
   .xwordjs-keyboard {
     display: none;
   }

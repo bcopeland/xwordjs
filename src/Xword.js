@@ -7,7 +7,7 @@ import Cell from './Cell.js';
 import Clues from './Clues.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch, Link } from 'react-router-dom';
-import { DropdownButton, MenuItem, ProgressBar } from 'react-bootstrap';
+import { ButtonGroup, ButtonToolbar, DropdownButton, MenuItem, ProgressBar, Button } from 'react-bootstrap';
 import scrollIntoViewIfNeeded from 'scroll-into-view-if-needed';
 import './Xword.css';
 
@@ -214,6 +214,7 @@ class XwordSolver extends Component {
     solutionId: ?string,
     dismissed_modal: boolean,
     modified: boolean,
+    rebus: boolean,
     server: ?Server
   };
   closeModal: Function;
@@ -238,6 +239,7 @@ class XwordSolver extends Component {
       'version': 1,
       'modified': false,
       'solutionId': null,
+      rebus: false,
       'server': null,
     }
     this.closeModal = this.closeModal.bind(this);
@@ -457,22 +459,43 @@ class XwordSolver extends Component {
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ch, 'version': cell.get('version') + 1});
-    this.setState({modified: true})
-    this.navNext();
+    if (this.state.rebus) {
+      var text = cell.get('entry');
+      cell.setState({entry: text + ch});
+      this.setState({modified: true})
+    } else {
+      cell.setState({'entry': ch, 'version': cell.get('version') + 1});
+      this.setState({modified: true})
+      this.navNext();
+    }
   }
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
-    this.setState({modified: true})
-    this.selectCell(this.state.activecell, this.state.direction);
+    if (this.state.rebus) {
+      var text = cell.get('entry');
+      text = text.substr(0, text.length - 1);
+      cell.setState({entry: text});
+      this.setState({modified: true})
+    } else {
+      cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+      this.setState({modified: true})
+      this.selectCell(this.state.activecell, this.state.direction);
+    }
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
-    this.setState({modified: true})
-    this.navPrev();
+
+    if (this.state.rebus) {
+      var text = cell.get('entry');
+      text = text.substr(0, text.length - 1);
+      cell.setState({entry: text});
+      this.setState({modified: true})
+    } else {
+      cell.setState({'entry': ' ', 'version': cell.get('version') + 1});
+      this.setState({modified: true})
+      this.navPrev();
+    }
   }
   isCorrect() {
     for (var i=0; i < this.state.cells.length; i++) {
@@ -480,7 +503,7 @@ class XwordSolver extends Component {
       var fill = cell.get('fill');
       var entry = cell.get('entry');
 
-      if (fill !== '#' && entry !== fill)
+      if (fill !== '#' && (entry !== fill && entry !== fill.charAt(0)))
         return false;
     }
     return true;
@@ -775,7 +798,7 @@ class XwordSolver extends Component {
     if (e)
       scrollIntoViewIfNeeded(e);
 
-    this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction});
+    this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction, rebus: false});
   }
   revealCell()
   {
@@ -883,6 +906,9 @@ class XwordSolver extends Component {
       this.setState({modified: false});
     }
   }
+  startRebus() {
+    this.setState({rebus: true});
+  }
   componentDidMount() {
     var self = this;
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
@@ -974,6 +1000,8 @@ class XwordSolver extends Component {
               <MenuItem divider/>
               <MenuItem eventKey="4" onClick={() => this.revealAll()}>Reveal All</MenuItem>
             </DropdownButton>
+            <ButtonSpacer/>
+            <Button onClick={() => this.setState({rebus: !this.state.rebus})} active={this.state.rebus} bsSize="xsmall">Rebus</Button>
           </div>
           <ClueBar value={this.state.clues}/>
           <div className="xwordjs-container">
@@ -1030,6 +1058,10 @@ class XwordPuzzleListLoader extends Component
     return <XwordPuzzleList puzzles={this.state.items}/>;
   }
 }
+
+const ButtonSpacer = (props) => (
+  <ButtonGroup><span className="xwordjs-button-spacer"/></ButtonGroup>
+);
 
 function XwordPuzzleList(props) {
   var items = [];

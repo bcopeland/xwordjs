@@ -30,10 +30,15 @@ function Cell(props) {
     circleclass = "xwordjs-cell-circled";
   }
 
+  var fontsize = 14;
+  if (props.value.length > 2) {
+    fontsize = 30 / props.value.length;
+  }
+
   return <div className={classname} id={props.id} onClick={() => props.onClick(props.id)}>
             <div className={circleclass}>
               <div className="xwordjs-cell-number">{props.number}</div>
-              <div className="xwordjs-cell-text">{props.value}</div>
+              <div className="xwordjs-cell-text" style={{"font-size": fontsize + "px"}}>{props.value}</div>
             </div>
           </div>;
 }

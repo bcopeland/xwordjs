@@ -13,6 +13,7 @@ function Xd(data) {
   this.clues = [];    // list of [[direction, num], clue, answer]
   this.notes = "";
   this.number_index = [];
+  this.rebus_key = {};
   var self = this;
 
   /*
@@ -48,6 +49,16 @@ function Xd(data) {
         if (colon >= 0) {
           var k = line.substr(0, colon).trim();
           var v = line.substr(colon + 1).trim();
+
+          if (k === 'Rebus') {
+            var rebuses = v.split(" ");
+            for (var l=0; l < rebuses.length; l++) {
+              var [rebus_code, rebus_val] = rebuses[l].split('=');
+              if (rebus_val) {
+                this.rebus_key[rebus_code] = rebus_val;
+              }
+            }
+          }
           self.headers.push([k, v]);
         } else {
           self.headers.push(["", line]);  // be permissive
@@ -56,13 +67,15 @@ function Xd(data) {
         // grid second
 
         var flags = Array(line.length).fill(0);
+        var gridline = Array(line.length);
         for (var j=0; j < line.length; j++) {
           var ch = line.charAt(j);
-          if (ch !== '#' && ch === ch.toLowerCase()) {
+          if (ch !== '#' && ch === ch.toLowerCase() && ch !== '1') {
             flags[j] |= self.FLAGS.CIRCLED;
           }
+          gridline[j] = this.rebus_key[ch] || ch.toUpperCase();
         }
-        self.grid.push(line.toUpperCase());
+        self.grid.push(gridline);
         self.flags.push(flags);
       } else if (section === 3) {
         // across or down clues
