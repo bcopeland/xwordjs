@@ -1010,11 +1010,22 @@ class XwordSolver extends Component {
             </div>
             <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
           </div>
+          <BabyLink filename={this.props.filename}/>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false)}/>
         </div>
       </div>
     );
   }
+}
+
+function BabyLink(props) {
+  var link = [];
+  if (props.filename === "2017-11-13.xd" || true) {
+    link.push(<a href="/images/syc.jpg">55-Across: healthy 7 lbs, 1 oz</a>)
+  }
+  return (
+      <div>{link}</div>
+  );
 }
 
 function XwordLoadFile(props) {
