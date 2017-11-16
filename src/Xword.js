@@ -12,7 +12,6 @@ import './Xword.css';
 // . manage wordlist
 //    . action to change wordlist
 // . export as xd/puz/pdf
-// . generate puzzle ids and save them by puzzle id
 // . list puzzles by id
 // . easy copy-paste grid
 // . undo/redo
@@ -20,7 +19,6 @@ import './Xword.css';
 // . hint entry
 // . show score in wordlist panel
 // . one-look helper
-// . letter histo
 // . optimize
 // . mobile keyboard always on top
 var Xd = require("./xd.js");
@@ -1036,7 +1034,7 @@ class XwordSolver extends Component {
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
-            <Histogram cells={this.state.cells}/>
+            <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={this.state.cells.map((x) => x.get('entry'))}/>
           </div>
           <div>
             <CellLetters histogram={this.state.cellLetters}/>

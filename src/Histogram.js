@@ -1,33 +1,36 @@
 
-import React, { Component } from 'react';
+import React from 'react';
 
 const Histogram = (props) => {
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  var cells = new Array(26);
-  for (let i = 0; i < letters.length; i++) {
-    cells[i] = 0;
+  var counts = new Array(props.keys.length);
+  var key_table = {};
+  for (let i = 0; i < props.keys.length; i++) {
+    counts[i] = 0;
+    key_table[props.keys[i]] = i;
   }
-  var total_ct = 0;
   var max_ct = 0;
-  for (let i = 0; i < props.cells.length; i++) {
-    const idx = props.cells[i].get('entry').toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
-    cells[idx] += 1;
-    total_ct += 1;
+  for (let i = 0; i < props.samples.length; i++) {
+    const sample = props.samples[i];
+    const idx = key_table[sample];
+    if (idx === undefined) {
+      continue;
+    }
+    counts[idx] += 1;
   }
-  for (let i = 0; i < letters.length; i++) {
-    if (cells[i] > max_ct) {
-      max_ct = cells[i];
+  for (let i = 0; i < props.keys.length; i++) {
+    if (counts[i] > max_ct) {
+      max_ct = counts[i];
     }
   }
   var bars = [];
   var labels = [];
-  for (let i = 0; i < letters.length; i++) {
+  for (let i = 0; i < props.keys.length; i++) {
     const max_length = 50.0;
-    const bar_length = max_length * (cells[i] / max_ct);
+    const bar_length = max_length * (counts[i] / max_ct);
     const bar_width = 5;
 
     bars.push(<rect height={bar_width} width={bar_length} y={2 * bar_width * i + 2} x={2 * bar_width} color="blue"/>);
-    labels.push(<text y={2 * bar_width * i + bar_width + 2} x={0} fontSize={2 * bar_width}>{letters[i]}</text>);
+    labels.push(<text y={2 * bar_width * i + bar_width + 2} x={0} fontSize={2 * bar_width}>{props.keys[i]}</text>);
   }
   return (
     <div>
