@@ -5,12 +5,10 @@ import FileInput from './FileInput.js';
 import { Route, Switch, Link } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert, Button, ButtonToolbar} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
+import Histogram from './Histogram.js';
 import './Xword.css';
 
 // . manage wordlist
-//  . for now just one wordlist
-//    . if not there, show error dialog on puzzle load w/ link
-//      to load it
 //    . action to change wordlist
 // . export as xd/puz/pdf
 // . generate puzzle ids and save them by puzzle id
@@ -1025,6 +1023,7 @@ class XwordSolver extends Component {
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
+            <Histogram cells={this.state.cells}/>
           </div>
           <div>
             <CellLetters histogram={this.state.cellLetters}/>
