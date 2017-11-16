@@ -6,6 +6,7 @@ import { Route, Switch, Link } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert, Button, ButtonToolbar} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
 import Histogram from './Histogram.js';
+import { saveAs } from 'file-saver';
 import './Xword.css';
 
 // . manage wordlist
@@ -442,10 +443,10 @@ class XwordSolver extends Component {
       } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
         // $FlowFixMe decode handles ArrayBuffer too
-        puz = new Xpf(decoder.decode(data));
+        puz = new Xpf().parse(decoder.decode(data));
         self.puzzleLoaded(puz);
       } else {
-        puz = new Puz(data);
+        puz = new Puz().parse(data);
         self.puzzleLoaded(puz);
       }
     });
@@ -460,6 +461,17 @@ class XwordSolver extends Component {
   }
   cellAt(x: number, y: number) : XwordCell {
     return this.state.cells[this.cellId(x, y)];
+  }
+  save() {
+    var xpf = new Xpf();
+    xpf.height = this.state.height;
+    xpf.width = this.state.width;
+    xpf.headers.push(['Title', this.state.title]);
+    xpf.headers.push(['Author', this.state.author]);
+    xpf.grid = this.getFillerString().split("\n");
+
+    var blob = new Blob([xpf.format()], {type: "text/xml; charset=utf-8"});
+    saveAs(blob, this.state.title.replace(/ /g, "_") + ".xml");
   }
   clueCells(cell_id: number, direction: string) {
     var xincr = 0, yincr = 0;
@@ -1012,6 +1024,7 @@ class XwordSolver extends Component {
           clearUncommitted={() => this.clearUncommitted()}
           undo={() => this.undo()}
           redo={() => alert("not a thing yet")}
+          save={() => this.save()}
           />
         <BetterLoadWordlist visible={this.state.wordlist.length == 0}/>
         <div className="xwordjs-vertical-container">
@@ -1053,6 +1066,8 @@ function XwordNav(props) {
         <MenuItem divider={true}/>
         <MenuItem eventKey={1.4} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
         <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.redo()}>Redo</MenuItem>
+        <MenuItem divider={true}/>
+        <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.save()}>Save</MenuItem>
       </DropdownButton>
     </Navbar>
   );

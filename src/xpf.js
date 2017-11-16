@@ -1,7 +1,7 @@
 /*
  * Parse .xpf crossword files.
  */
-function Xpf(data) {
+function Xpf() {
   this.FLAGS = {
     INCORRECT_ONCE: 0x10,
     INCORRECT: 0x20,
@@ -19,7 +19,7 @@ function Xpf(data) {
   this.decoder = new TextDecoder('iso8859-1');
   var self = this;
 
-  this.parseXpf = function(buffer) {
+  this.parse = function(buffer) {
 
     var parser = new DOMParser();
     var doc = parser.parseFromString(buffer, "text/xml");
@@ -80,10 +80,44 @@ function Xpf(data) {
         }
       }
     }
+    return this;
   }
 
-  // parse the passed-in data.
-  self.parseXpf(data);
+  this.format = function() {
+    var doc = document.implementation.createDocument("", "", null);
+
+    var root = doc.createElement("Puzzles");
+    var puzzle = doc.createElement("Puzzle");
+
+    for (var i = 0; i < this.headers.length; i++) {
+      var node = doc.createElement(this.headers[i][0]);
+      node.appendChild(doc.createTextNode(this.headers[i][1]));
+      puzzle.appendChild(node);
+    }
+    var size = doc.createElement("Size");
+    var rows = doc.createElement("Rows");
+    rows.appendChild(doc.createTextNode(this.height));
+    var cols = doc.createElement("Cols");
+    cols.appendChild(doc.createTextNode(this.width));
+    size.appendChild(rows);
+    size.appendChild(cols);
+    puzzle.appendChild(size);
+
+    var grid = doc.createElement("Grid");
+    for (i = 0; i < this.height; i++) {
+      var row = doc.createElement("Row");
+      var grid_row = this.grid[i].replace(/#/g, ".");
+      row.appendChild(doc.createTextNode(grid_row));
+      grid.appendChild(row);
+    }
+    puzzle.appendChild(grid);
+
+    // TODO clues
+
+    root.appendChild(puzzle);
+    doc.appendChild(root);
+    return new XMLSerializer().serializeToString(doc);
+  }
 }
 if (typeof(module) !== "undefined") {
   module.exports = Xpf;

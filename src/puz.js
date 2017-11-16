@@ -1,7 +1,7 @@
 /*
  * Parse .puz crossword files.
  */
-function Puz(data) {
+function Puz() {
   this.FLAGS = {
     INCORRECT_ONCE: 0x10,
     INCORRECT: 0x20,
@@ -68,7 +68,7 @@ function Puz(data) {
     return str;
   }
 
-  this.parsePuz = function(buffer) {
+  this.parse = function(buffer) {
 
     // ArrayBuffer -> DataView
     var data = new DataView(buffer);
@@ -169,10 +169,8 @@ function Puz(data) {
       }
     }
     this.clues = across_clues.concat(down_clues);
+    return this;
   }
-
-  // parse the passed-in data.
-  self.parsePuz(data);
 }
 if (typeof(module) !== "undefined") {
   module.exports = Puz;
