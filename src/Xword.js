@@ -173,15 +173,6 @@ class Mutation {
   }
 }
 
-function CellLetters(props) {
-  var data = props.histogram;
-  var str = "";
-  for (var [key, value] of data.entries()) {
-    str += key + ": " + value + ", ";
-  }
-  return <span>{str}</span>;
-}
-
 class BetterLoadWordlist extends Component {
   state: {
     dismissed: boolean,
@@ -1034,10 +1025,10 @@ class XwordSolver extends Component {
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
-            <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={this.state.cells.map((x) => x.get('entry'))}/>
+            <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={this.state.cells.map((x) => [x.get('entry'), 1])}/>
           </div>
           <div>
-            <CellLetters histogram={this.state.cellLetters}/>
+            <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(this.state.cellLetters.entries()).map((x) => [x[0].toUpperCase(), x[1]])}/>
             Estimated fills: {this.state.numFills}
           </div>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false, false)}/>

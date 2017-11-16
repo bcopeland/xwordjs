@@ -10,18 +10,24 @@ const Histogram = (props) => {
   }
   var max_ct = 0;
   for (let i = 0; i < props.samples.length; i++) {
-    const sample = props.samples[i];
+    const smp_count = props.samples[i];
+    const sample = smp_count[0];
+    const count = smp_count[1];
+
     const idx = key_table[sample];
     if (idx === undefined) {
       continue;
     }
-    counts[idx] += 1;
+    counts[idx] += count;
   }
   for (let i = 0; i < props.keys.length; i++) {
     if (counts[i] > max_ct) {
       max_ct = counts[i];
     }
   }
+  if (!max_ct)
+    max_ct = 1;
+
   var bars = [];
   var labels = [];
   for (let i = 0; i < props.keys.length; i++) {
