@@ -29,12 +29,12 @@ const Histogram = (props) => {
     const bar_length = max_length * (counts[i] / max_ct);
     const bar_width = 5;
 
-    bars.push(<rect height={bar_width} width={bar_length} y={2 * bar_width * i + 2} x={2 * bar_width} color="blue"/>);
-    labels.push(<text y={2 * bar_width * i + bar_width + 2} x={0} fontSize={2 * bar_width}>{props.keys[i]}</text>);
+    bars.push(<rect width={bar_width} height={bar_length} x={10 * i} y={max_length - bar_length} color="blue"/>);
+    labels.push(<text x={2 * bar_width * i} y={max_length + 2 * bar_width} fontSize={2 * bar_width}>{props.keys[i]}</text>);
   }
   return (
     <div>
-      <svg height="300">
+      <svg>
         {bars}
         {labels}
       </svg>
