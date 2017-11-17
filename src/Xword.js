@@ -1027,7 +1027,6 @@ class XwordSolver extends Component {
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
-            <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={this.state.cells.map((x) => [x.get('entry'), 1])}/>
           </div>
           <div>
             <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(this.state.cellLetters.entries()).map((x) => [x[0].toUpperCase(), x[1]])}/>
