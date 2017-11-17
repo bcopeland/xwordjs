@@ -1020,7 +1020,7 @@ class XwordSolver extends Component {
 
 function BabyLink(props) {
   var link = [];
-  if (props.filename === "2017-11-13.xd" || true) {
+  if (props.filename === "2017-11-13.xd") {
     link.push(<a href="/images/syc.jpg">55-Across: healthy 7 lbs, 1 oz</a>)
   }
   return (
