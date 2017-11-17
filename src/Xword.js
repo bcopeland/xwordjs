@@ -329,13 +329,10 @@ class XwordSolver extends Component {
     var [x, y] = this.cellPos(activecell);
     var dir = direction === 'A' ? 0 : 1;
 
-    console.log("update fills: " + x + ", " + y + " " + dir);
-
     var filler = this.state.filler;
     var result = filler.getFills(x, y, dir);
     var num_fills = filler.estimatedFills();
     var cell_letters = filler.getCellLetters(x, y);
-    console.log("cell letters: " + JSON.stringify(Array.from(cell_letters)));
 
     for (var i=0; i < this.state.height; i++) {
         for (var j = 0; j < this.state.width; j++) {
@@ -419,7 +416,6 @@ class XwordSolver extends Component {
       filler: new Filler.filler('', new Filler.wordlist(wordlist)),
       construct: true,
     });
-    console.log("update grid from load");
     this.state.filler.updateGrid(this.getFillerString());
   }
   loadPuzzleURL(url: string, filename : ?string) {
@@ -851,7 +847,6 @@ class XwordSolver extends Component {
   saveStoredData()
   {
     var key = "construct_" + this.state.puzzleId;
-    console.log("saving data: " + key);
     var data = {
       title: this.state.title,
       author: this.state.author,
@@ -870,13 +865,11 @@ class XwordSolver extends Component {
     // update filler state
     var grid = this.getFillerString();
     var filler = this.state.filler;
-    console.log("update grid");
     filler.updateGrid(grid);
   }
   readStoredData()
   {
     var key = "construct_" + this.state.puzzleId;
-    console.log("loading data: " + key);
     var data = localStorage.getItem(key);
     if (!data)
       return null;
