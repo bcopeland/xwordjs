@@ -1010,6 +1010,14 @@ class XwordSolver extends Component {
     if (id) {
       this.loadPuzzleFromId(id);
     }
+
+    if (!this.state.wordlist.length) {
+      var wordlist = this.loadWordlist("default");
+      this.setState({
+        wordlist: wordlist,
+        filler: new Filler.filler('', new Filler.wordlist(wordlist))
+      });
+    }
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
     window.addEventListener("resize", () => self.resizeScrollPane());
     window.setTimeout(this.resizeScrollPane, 0);
