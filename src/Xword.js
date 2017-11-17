@@ -414,7 +414,6 @@ class XwordSolver extends Component {
     });
     console.log("update grid from load");
     this.state.filler.updateGrid(this.getFillerString());
-    this.resizeScrollPane();
   }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
@@ -832,8 +831,9 @@ class XwordSolver extends Component {
 
     var gridHeight = window.getComputedStyle(gridelem).getPropertyValue("height");
 
-    if (cluediv)
+    if (cluediv) {
       cluediv.style.height = gridHeight;
+    }
 
     for (var i = 0; i < cluelist.length; i++) {
         var e = cluelist[i];
@@ -990,6 +990,8 @@ class XwordSolver extends Component {
       this.loadPuzzleFromId(id);
     }
     window.addEventListener("keydown", (e) => self.handleKeyDown(e));
+    window.addEventListener("resize", () => self.resizeScrollPane());
+    window.setTimeout(this.resizeScrollPane, 0);
   }
   componentWillUnmount() {
     var self = this;
