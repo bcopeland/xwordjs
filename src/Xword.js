@@ -104,6 +104,7 @@ class Grid extends Component {
         var entry = this.props.cells[ind].get('entry');
         var active = this.props.cells[ind].get('active');
         var focus = this.props.cells[ind].get('focus');
+        var hinted = this.props.cells[ind].get('hinted');
         var circled = this.props.cells[ind].get('circled');
         var number = this.props.cells[ind].get('number') || '';
         var difficulty = this.props.cells[ind].get('difficulty') || '';
@@ -116,7 +117,7 @@ class Grid extends Component {
           difficulty = '';
 
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
-         isBlack={black} isActive={active} isFocus={focus}
+         isBlack={black} isActive={active} isFocus={focus} isHinted={hinted}
          isCircled={circled} difficulty={difficulty}
          isTop={i===0} isLeft={j===0} number={number}
          onClick={(x)=>this.props.handleClick(parseInt(x.substring(5), 10))}/>;
@@ -234,7 +235,7 @@ class XwordSolver extends Component {
   };
   closeModal: Function;
   showAnswers: Function;
-  clearUncommitted: Function;
+  clearHinted: Function;
   fill: Function;
   fillEntry: Function;
 
@@ -267,7 +268,7 @@ class XwordSolver extends Component {
     this.showAnswers = this.showAnswers.bind(this);
     this.fill = this.fill.bind(this);
     this.fillEntry = this.fillEntry.bind(this);
-    this.clearUncommitted = this.clearUncommitted.bind(this);
+    this.clearHinted = this.clearHinted.bind(this);
   }
   loadPuzzle(file: File, filename : ?string) {
     this.loadPuzzleURL(window.URL.createObjectURL(file), filename);
@@ -358,28 +359,34 @@ class XwordSolver extends Component {
     }
     this.setState({fills: result, numFills: num_fills, cells: this.state.cells.slice(), cellLetters: cell_letters});
   }
-  clearUncommitted() {
+  clearHinted() {
     for (var i=0; i < this.state.cells.length; i++) {
-      if (!this.state.cells[i].get('committed')) {
-        this.state.cells[i].setState({entry: ' '});
+      if (this.state.cells[i].get('hinted')) {
+        this.state.cells[i].setState({entry: ' ', hinted: false});
       }
     }
     this.setState({'cells': this.state.cells.slice()});
   }
   fill() {
+    this.clearHinted();
     var grid = this.getFillerString();
 
     var filler = this.state.filler;
+    filler.updateGrid(grid);
+
     var self = this;
-    filler.fillAsync(function(result, next) {
+    filler.fillAsync(1.0, function(result, next) {
       var rows = result.trim().split("\n");
       for (var i = 0; i < rows.length; i++) {
         for (var j = 0; j < rows[i].length; j++) {
           var cell_id = self.state.height * i + j;
-          var entry = rows[i].charAt(j);
+          var entry = rows[i].charAt(j).toUpperCase();
           if (entry === '#' || entry === '.')
             continue;
-          self.state.cells[cell_id].setState({entry: entry});
+          if (entry === self.state.cells[cell_id].get('entry'))
+            continue;
+
+          self.state.cells[cell_id].setState({entry: entry, hinted: true});
         }
       }
       self.setState({'cells': self.state.cells.slice()});
@@ -569,7 +576,7 @@ class XwordSolver extends Component {
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ch, 'version': cell.get('version') + 1, committed: true});
+    cell.setState({'entry': ch, 'version': cell.get('version') + 1, hinted: false});
     this.setState({modified: true})
     this.saveStoredData();
     this.navNext();
@@ -577,14 +584,14 @@ class XwordSolver extends Component {
   del() {
     var cell = this.state.cells[this.state.activecell];
 
-    cell.setState({'entry': ' ', 'version': cell.get('version') + 1, committed: true});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1, hinted: false});
     this.setState({modified: true})
     this.saveStoredData();
     this.selectCell(this.state.activecell, this.state.direction);
   }
   backspace() {
     var cell = this.state.cells[this.state.activecell];
-    cell.setState({'entry': ' ', 'version': cell.get('version') + 1, committed: true});
+    cell.setState({'entry': ' ', 'version': cell.get('version') + 1, hinted: false});
     this.setState({modified: true})
     this.saveStoredData();
     this.navPrev();
@@ -674,7 +681,7 @@ class XwordSolver extends Component {
     var orig_str = '';
     for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
       var cell_id = y * this.state.width + x;
-      this.state.cells[cell_id].setState({entry: value[i], committed: true});
+      this.state.cells[cell_id].setState({entry: value[i], hinted: false});
     }
     this.setState({'cells': this.state.cells.slice(), 'undo': this.state.undo.slice()});
     this.state.filler.updateGrid(this.getFillerString());
@@ -754,7 +761,7 @@ class XwordSolver extends Component {
         cells[y * maxx + x] = new XwordCell({
           'fill': fill,
           'entry': entry,
-          'committed': true,
+          'hinted': false,
           'number': number,
           'active': false,
           'circled': circled
@@ -854,6 +861,7 @@ class XwordSolver extends Component {
         return {
           fill: x.state.fill,
           entry: x.state.entry,
+          hinted: x.state.hinted,
         }
       }),
     };
@@ -976,7 +984,7 @@ class XwordSolver extends Component {
     for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
       var cell_id = y * this.state.width + x;
       orig_str += this.state.cells[cell_id].get('entry');
-      this.state.cells[cell_id].setState({entry: value[i], committed: true});
+      this.state.cells[cell_id].setState({entry: value[i], hinted: false});
     }
     this.state.undo.push(new Mutation(start_cell, y_incr, orig_str));
     var newcells = this.state.cells.slice();
@@ -1012,7 +1020,7 @@ class XwordSolver extends Component {
         <XwordNav
           processToggle={() => this.toggleBlank()}
           fill={() => this.fill()}
-          clearUncommitted={() => this.clearUncommitted()}
+          clearHinted={() => this.clearHinted()}
           undo={() => this.undo()}
           redo={() => alert("not a thing yet")}
           save={() => this.save()}
@@ -1052,7 +1060,7 @@ function XwordNav(props) {
         <MenuItem eventKey={1.1} onSelect={(event, eventKey) => props.processToggle()}>Toggle Blank</MenuItem>
         <MenuItem divider={true}/>
         <MenuItem eventKey={1.2} onSelect={(event, eventKey) => props.fill()}>Autofill</MenuItem>
-        <MenuItem eventKey={1.3} onSelect={(event, eventKey) => props.clearUncommitted()}>Clear hints</MenuItem>
+        <MenuItem eventKey={1.3} onSelect={(event, eventKey) => props.clearHinted()}>Clear hints</MenuItem>
         <MenuItem divider={true}/>
         <MenuItem eventKey={1.4} onSelect={(event, eventKey) => props.undo()}>Undo</MenuItem>
         <MenuItem eventKey={1.5} onSelect={(event, eventKey) => props.redo()}>Redo</MenuItem>

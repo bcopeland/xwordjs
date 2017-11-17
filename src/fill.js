@@ -212,6 +212,19 @@ class Entry {
     }
   }
 
+  randomize(amt: number) {
+    if (amt <= 0.0 || amt > 1.0)
+      return;
+
+    for (let i = 0; i < amt * this.valid_words.length; i++) {
+      var x = Math.ceil(Math.random() * this.valid_words.length);
+      var y = Math.ceil(Math.random() * this.valid_words.length);
+      var tmp = this.valid_words[x];
+      this.valid_words[x] = this.valid_words[y];
+      this.valid_words[y] = tmp;
+    }
+  }
+
   checkpoint() : any
   {
     return [this.valid_words.slice(), this.fill_index];
@@ -426,6 +439,12 @@ class Grid {
         var this_changed = this.entries[i].satisfy();
         changed = changed || this_changed;
       }
+    }
+  }
+
+  randomize(amt: number) {
+    for (var i = 0; i < this.entries.length; i++) {
+      this.entries[i].randomize(amt);
     }
   }
 
@@ -645,7 +664,8 @@ class Filler {
     this.grid = new Grid(template, this.wordlist);
   }
 
-  fillAsync(callback: Function) : void {
+  fillAsync(randomize: number, callback: Function) : void {
+    this.grid.randomize(randomize);
     this.grid.fillAsync(callback);
   }
 

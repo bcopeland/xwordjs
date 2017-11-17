@@ -12,7 +12,7 @@ class XwordCell {
     number: number,
     version: number,
     modified: boolean,
-    free: boolean,
+    hinted: boolean,
     difficulty: ?string,
   };
 
@@ -26,7 +26,7 @@ class XwordCell {
       circled: false,
       version: 0,
       modified: false,
-      free: true,
+      hinted: false,
       number: 0,
       difficulty: null,
     };
@@ -76,6 +76,10 @@ function Cell(props: Props) {
   } else if (props.isBlack) {
     classname += " xwordjs-cell-black";
   }
+  if (props.isHinted) {
+    classname += " xwordjs-cell-hinted";
+  }
+
   var circleclass = "";
   if (props.isCircled) {
     circleclass = "xwordjs-cell-circled";

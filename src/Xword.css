@@ -68,8 +68,8 @@
   background-color: #707070;
 }
 
-.xwordjs-cell-notfree {
-  background-color: #dddddd;
+.xwordjs-cell-hinted {
+  color: #808080;
 }
 
 .xwordjs-cell-active {
