@@ -372,7 +372,7 @@ class XwordSolver extends Component {
     filler.updateGrid(grid);
 
     var self = this;
-    filler.fillAsync(1.0, function(result, next) {
+    filler.fillAsync(0.3, function(result, next) {
       var rows = result.trim().split("\n");
       for (var i = 0; i < rows.length; i++) {
         for (var j = 0; j < rows[i].length; j++) {
