@@ -229,7 +229,8 @@ class XwordSolver extends Component {
     filler: Filler.filler,
     wordlist: Array<string>,
     puzzleId: string,
-    undo: Array<Mutation>
+    undo: Array<Mutation>,
+    redo: Array<Mutation>
   };
   closeModal: Function;
   showAnswers: Function;
@@ -260,6 +261,7 @@ class XwordSolver extends Component {
       solutionId: null,
       puzzleId: '',
       undo: [],
+      redo: [],
       wordlist: [],
     }
     this.closeModal = this.closeModal.bind(this);
@@ -596,11 +598,18 @@ class XwordSolver extends Component {
   }
   processKeyCode(keyCode: number, shift: boolean, ctrl: boolean)
   {
-    // ctrl-z
-    if (ctrl && keyCode == 0x5a)
-    {
-      this.undo();
-      return true;
+    if (ctrl) {
+      switch (keyCode) {
+      case 0x59:
+        this.redo();
+        return true;
+      case 0x5a:
+        this.undo();
+        return true;
+      case 0x47:
+        this.fill();
+        return true;
+      }
     }
 
     // A-Z
@@ -663,13 +672,13 @@ class XwordSolver extends Component {
       e.preventDefault();
     }
   }
-  undo() {
+  undoOrRedo(oldstack, newstack) {
     var mutation;
 
-    if (!this.state.undo.length)
-      return;
+    if (!oldstack.length)
+      return [oldstack, newstack];
 
-    mutation = this.state.undo.pop();
+    mutation = oldstack.pop();
 
     var [x, y] = this.cellPos(mutation.start_cell);
     var x_incr = !mutation.direction;
@@ -679,11 +688,19 @@ class XwordSolver extends Component {
     var orig_str = '';
     for (var i = 0; i < value.length; i++, x += x_incr, y += y_incr) {
       var cell_id = y * this.state.width + x;
+      orig_str += this.state.cells[cell_id].get('entry');
       this.state.cells[cell_id].setState({entry: value[i], hinted: false});
     }
-    this.setState({'cells': this.state.cells.slice(), 'undo': this.state.undo.slice()});
+    newstack.push(new Mutation(mutation.start_cell, mutation.direction, orig_str));
+    this.setState({'cells': this.state.cells.slice()});
     this.state.filler.updateGrid(this.getFillerString());
     this.updateFills(this.state.activecell, this.state.direction);
+  }
+  undo() {
+    this.undoOrRedo(this.state.undo, this.state.redo);
+  }
+  redo() {
+    this.undoOrRedo(this.state.redo, this.state.undo);
   }
   toggleBlank() {
     var i = this.state.activecell;
@@ -1018,7 +1035,7 @@ class XwordSolver extends Component {
           fill={() => this.fill()}
           clearHinted={() => this.clearHinted()}
           undo={() => this.undo()}
-          redo={() => alert("not a thing yet")}
+          redo={() => this.redo()}
           save={() => this.save()}
           />
         <BetterLoadWordlist visible={this.state.wordlist.length == 0}/>
