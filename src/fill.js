@@ -217,8 +217,8 @@ class Entry {
       return;
 
     for (let i = 0; i < amt * this.valid_words.length; i++) {
-      var x = Math.ceil(Math.random() * this.valid_words.length);
-      var y = Math.ceil(Math.random() * this.valid_words.length);
+      var x = Math.floor(Math.random() * this.valid_words.length);
+      var y = Math.floor(Math.random() * this.valid_words.length);
       var tmp = this.valid_words[x];
       this.valid_words[x] = this.valid_words[y];
       this.valid_words[y] = tmp;
