@@ -12,31 +12,10 @@ import scrollIntoViewIfNeeded from 'scroll-into-view-if-needed';
 import './Xword.css';
 
 // TODO
-//  . usability
-//  . styling
-//   . timer
-//    . center over puzzle?
-//    . smaller top/bottom margins
-//   . title
-//   . colors
-//  . polish
-//   . clue resize to grid height
-//   . shift-tab focus last letter
-//   . scroll sideways annoying
-//  . phone interface
-//   . clue only entry
-//  . restyle input selection
-//  . solve stats (by day)
-//  . creation app using same components as solver app
-//  . dictionary loader
-//  . javacsript filler
-//  . fill statistics - scrabble score etc
-//  . file drop
-//  . file extension from choose file doesn't work
-//  'A' => 0, 'D' => 1 constants
-//  . don't take over ctrl-l
-//  . border on clues
-//  . initial clue selection if 0 is black
+// . restyle secondary clue
+// . clue-only entry
+// . auto-pause
+// . port nav enhancements (no auto next, skip to first blank)
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
