@@ -569,16 +569,20 @@ class XwordSolver extends Component {
   }
   type(ch: string) {
     var cell = this.state.cells[this.state.activecell];
+    var orig_str = cell.get('entry');
 
     cell.setState({'entry': ch, 'version': cell.get('version') + 1, hinted: false});
+    this.state.undo.push(new Mutation(this.state.activecell, this.state.direction == 'A' ? 0 : 1, orig_str));
     this.setState({modified: true})
     this.saveStoredData();
     this.navNext();
   }
   del() {
     var cell = this.state.cells[this.state.activecell];
+    var orig_str = cell.get('entry');
 
     cell.setState({'entry': ' ', 'version': cell.get('version') + 1, hinted: false});
+    this.state.undo.push(new Mutation(this.state.activecell, this.state.direction == 'A' ? 0 : 1, orig_str));
     this.setState({modified: true})
     this.saveStoredData();
     this.selectCell(this.state.activecell, this.state.direction);
@@ -679,6 +683,7 @@ class XwordSolver extends Component {
     }
     this.setState({'cells': this.state.cells.slice(), 'undo': this.state.undo.slice()});
     this.state.filler.updateGrid(this.getFillerString());
+    this.updateFills(this.state.activecell, this.state.direction);
   }
   toggleBlank() {
     var i = this.state.activecell;
