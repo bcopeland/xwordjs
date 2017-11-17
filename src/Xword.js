@@ -71,12 +71,10 @@ function Title(props) {
 }
 
 function FillItem(props) {
-  var without_score = props.value;
-  if (without_score.indexOf(" ") > 0) {
-    without_score = props.value.substr(0, without_score.indexOf(" "));
-  }
   return (
-    <div className={"xwordjs-fill"} onClick={() => props.onClick(without_score)}>{props.value}</div>
+    <div className={"xwordjs-fill-item"} onClick={() => props.onClick(props.value)}>
+      <span>{props.value}</span><span>{props.score}</span>
+    </div>
   );
 }
 
@@ -84,7 +82,7 @@ function FillList(props) {
 
   var items = [];
   for (var i=0; i < props.value.length; i++) {
-    items.push(<FillItem key={"item" + i} value={props.value[i]} onClick={(x) => props.fillEntry(x)}/>);
+    items.push(<FillItem key={"item" + i} score={props.value[i][1]} value={props.value[i][0]} onClick={(x) => props.fillEntry(x.toUpperCase())}/>);
   }
   return (
     <div id="xwordjs-fill-list-container" className="xwordjs-fill-list-container">
@@ -225,7 +223,7 @@ class XwordSolver extends Component {
     solutionId: ?string,
     dismissed_modal: boolean,
     modified: boolean,
-    fills: Array<string>,
+    fills: Array<Array<string>>,
     numFills: number,
     cellLetters: Map<string, number>,
     filler: Filler.filler,
@@ -840,7 +838,7 @@ class XwordSolver extends Component {
 
     for (var i = 0; i < cluelist.length; i++) {
         var e = cluelist[i];
-        var newheight = String(parseInt(gridHeight, 10) - 60) + "px";
+        var newheight = String(parseInt(gridHeight, 10) - 10) + "px";
         e.style.height = newheight;
     }
   }

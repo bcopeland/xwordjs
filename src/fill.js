@@ -350,10 +350,12 @@ class Entry {
     return this.valid_words.length;
   }
 
-  fills() : Array<string> {
+  fills() : Array<Array<string>> {
     var self = this;
     return this.valid_words.map(function(i) {
-      return self.wordlist.at(i);
+      var word = self.wordlist.at(i);
+      var score = self.wordlist.score(word);
+      return [word, '' + score]
     });
   }
 }
@@ -485,7 +487,7 @@ class Grid {
     return sum;
   }
 
-  getFills(x: number, y: number, direction: number) : Array<string> {
+  getFills(x: number, y: number, direction: number) : Array<Array<string>> {
     // get entry from position
     if (x < 0 || x >= this.width || y < 0 || y >= this.height ||
         direction < DIR_ACROSS || direction > DIR_DOWN) {
@@ -519,7 +521,7 @@ class Grid {
       var alphact = new Map();
       var offset = entry.cellIndex(cell_id);
       for (const f of entry.fills()) {
-        var alpha = f.charAt(offset);
+        var alpha = f[0].charAt(offset);
         var ct = alphact.get(alpha) || 0;
         alphact.set(alpha, ct + 1);
       }
