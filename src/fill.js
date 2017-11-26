@@ -315,10 +315,6 @@ class Entry {
         continue;
       }
 
-      if (word.length != pattern.length) {
-        continue;
-      }
-
       var skip = false;
       var bitmap = this.wordlist.bitmap_at(this.valid_words[i]);
       for (var j = 0; j < pattern.length; j++) {
@@ -333,9 +329,12 @@ class Entry {
 
       new_valid.push(this.valid_words[i]);
     }
+    if (orig_len === this.valid_words.length)
+      return false;
+
     this.valid_words = new_valid;
     this.recomputeValidLetters();
-    return orig_len != this.valid_words.length;
+    return true;
   }
 
   nextWord() {
