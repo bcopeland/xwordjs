@@ -78,6 +78,82 @@ function FillItem(props) {
   );
 }
 
+function Stats(props) {
+
+  var clue_lengths = {};
+  var letter_counts = {};
+  var num_across = 0;
+  var num_down = 0;
+  var num_black = 0;
+  var curlen = 0;
+
+  // row counts
+  curlen = 0;
+  for (let y = 0; y < props.height; y++) {
+    for (let x = 0; x < props.width; x++) {
+      var i = props.width * y + x;
+      var cell = props.cells[i];
+      var fill = cell.get('fill');
+      letter_counts[fill] += 1;
+
+      if (cell.isBlack()) {
+        num_black += 1;
+      } else {
+        curlen += 1;
+      }
+
+      if (curlen && (x === props.width - 1 || cell.isBlack())) {
+        if (!clue_lengths[curlen])
+          clue_lengths[curlen] = 0;
+        clue_lengths[curlen] += 1;
+        num_across += 1;
+        curlen = 0;
+      }
+    }
+  }
+
+  // col counts
+  curlen = 0;
+  for (let x = 0; x < props.width; x++) {
+    for (let y = 0; y < props.height; y++) {
+      var i = props.width * y + x;
+      var cell = props.cells[i];
+      var fill = cell.get('fill');
+
+      if (!cell.isBlack()) {
+        curlen += 1;
+      }
+
+      // if end of line or black, save current clue count
+      if (curlen && (y === props.height - 1 || cell.isBlack())) {
+        if (!clue_lengths[curlen])
+          clue_lengths[curlen] = 0;
+        clue_lengths[curlen] += 1;
+        num_down += 1;
+        curlen = 0;
+      }
+    }
+  }
+
+  var trows = [];
+  var keys = Object.keys(clue_lengths).sort((a, b) => (a - b));
+  trows.push(<tr><th>Blocks</th><td>{num_black}</td></tr>);
+  trows.push(<tr><th>Words</th><td>{num_across + num_down} ({num_across} A, {num_down} D)</td></tr>);
+  for (var i = 0; i < keys.length; i++) {
+    trows.push(<tr><th>{keys[i]}</th><td>{clue_lengths[keys[i]]}</td></tr>);
+  }
+
+  // <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(Object.keys(letter_counts).map((x) => [x, letter_counts[x]]))}/>
+  return (
+    <div>
+    <table>
+      <thead><tr><th colspan="2">Stats</th></tr></thead>
+      <tbody>{trows}</tbody>
+    </table>
+    </div>
+  );
+}
+
 function FillList(props) {
 
   var items = [];
@@ -463,24 +539,6 @@ class XwordSolver extends Component {
 
     var blob = new Blob([xpf.format()], {type: "text/xml; charset=utf-8"});
     saveAs(blob, this.state.title.replace(/ /g, "_") + ".xml");
-  }
-  clueCells(cell_id: number, direction: string) {
-    var xincr = 0, yincr = 0;
-    if (direction === 'A') {
-      xincr = 1;
-    } else {
-      yincr = 1;
-    }
-    var [x, y] = this.cellPos(cell_id);
-    var cells = [];
-    for (var j = 0; y < this.state.height && x < this.state.width; j++) {
-      var cell = this.cellAt(x, y);
-      if (cell.isBlack())
-        break;
-      cells.push(this.cellId(x, y));
-      x += xincr; y += yincr;
-    }
-    return cells;
   }
   navRight() {
     var [x, y] = this.cellPos(this.state.activecell);
@@ -1056,6 +1114,7 @@ class XwordSolver extends Component {
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
             <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
+            <Stats height={this.state.height} width={this.state.width} cells={this.state.cells}/>
           </div>
           <div>
             <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(this.state.cellLetters.entries()).map((x) => [x[0].toUpperCase(), x[1]])}/>
