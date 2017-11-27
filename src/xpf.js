@@ -106,7 +106,8 @@ function Xpf() {
     var grid = doc.createElement("Grid");
     for (i = 0; i < this.height; i++) {
       var row = doc.createElement("Row");
-      var grid_row = this.grid[i].replace(/#/g, ".");
+      var grid_row = this.grid[i].replace(/\./g, " ");
+      grid_row = grid_row.replace(/#/g, ".");
       row.appendChild(doc.createTextNode(grid_row));
       grid.appendChild(row);
     }
