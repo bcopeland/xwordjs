@@ -5,6 +5,8 @@ import FileInput from './FileInput.js';
 import { Route, Switch, Link } from 'react-router-dom';
 import {Navbar, Nav, MenuItem, NavDropdown, DropdownButton, Alert, Button, ButtonToolbar} from 'react-bootstrap';
 import { XwordCell, Cell } from './Cell.js';
+import { XwordClue } from './Clue.js';
+import { ClueEditor } from './ClueEditor.js';
 import Histogram from './Histogram.js';
 import { saveAs } from 'file-saver';
 import './Xword.css';
@@ -25,38 +27,6 @@ var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
 var Filler = require("./fill.js");
-
-class XwordClue {
-  state: {
-    index: number,
-    direction: string,
-    number: number,
-    clue: string,
-    answer: string,
-    active: boolean,
-    crossActive: boolean
-  };
-
-  constructor(options) {
-    this.state = {
-      'index': 0,
-      'direction': 'A',
-      'number': 0,
-      'clue': '',
-      'answer': '',
-      'active': false,
-      'crossActive': false,
-    };
-    Object.assign(this.state, options);
-  }
-  setState(newstate) {
-    Object.assign(this.state, newstate);
-  }
-  get(key) : any {
-    return this.state[key];
-  }
-}
-
 
 function Title(props) {
   var title = props.title;
@@ -93,7 +63,7 @@ function Stats(props) {
     for (let x = 0; x < props.width; x++) {
       var i = props.width * y + x;
       var cell = props.cells[i];
-      var fill = cell.get('fill');
+      var fill = cell.get('entry');
       letter_counts[fill] += 1;
 
       if (cell.isBlack()) {
@@ -118,7 +88,7 @@ function Stats(props) {
     for (let y = 0; y < props.height; y++) {
       var i = props.width * y + x;
       var cell = props.cells[i];
-      var fill = cell.get('fill');
+      var fill = cell.get('entry');
 
       if (!cell.isBlack()) {
         curlen += 1;
@@ -136,14 +106,14 @@ function Stats(props) {
   }
 
   var trows = [];
-  var keys = Object.keys(clue_lengths).sort((a, b) => (a - b));
+  var keys = Object.keys(clue_lengths).sort((a, b) => ((parseInt(a) - parseInt(b))));
   trows.push(<tr><th>Blocks</th><td>{num_black}</td></tr>);
   trows.push(<tr><th>Words</th><td>{num_across + num_down} ({num_across} A, {num_down} D)</td></tr>);
   for (var i = 0; i < keys.length; i++) {
     trows.push(<tr><th>{keys[i]}</th><td>{clue_lengths[keys[i]]}</td></tr>);
   }
 
-  // <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(Object.keys(letter_counts).map((x) => [x, letter_counts[x]]))}/>
+  //<Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(Object.keys(letter_counts).map((x) => [x, letter_counts[x]]))}/>
   return (
     <div>
     <table>
@@ -305,8 +275,9 @@ class XwordSolver extends Component {
     filler: Filler.filler,
     wordlist: Array<string>,
     puzzleId: string,
+    clues: Array<XwordClue>,
     undo: Array<Mutation>,
-    redo: Array<Mutation>
+    redo: Array<Mutation>,
   };
   closeModal: Function;
   showAnswers: Function;
@@ -338,6 +309,7 @@ class XwordSolver extends Component {
       puzzleId: '',
       undo: [],
       redo: [],
+      clues: [],
       wordlist: [],
     }
     this.closeModal = this.closeModal.bind(this);
@@ -431,6 +403,59 @@ class XwordSolver extends Component {
         }
     }
     this.setState({fills: result, numFills: num_fills, cells: this.state.cells.slice(), cellLetters: cell_letters});
+  }
+  getAnswers() {
+    var across = [];
+    var down = [];
+    let answer = '';
+    for (let y = 0; y < this.state.height; y++) {
+      for (let x = 0; x < this.state.width; x++) {
+        var i = this.state.width * y + x;
+        var cell = this.state.cells[i];
+        var fill = cell.get('entry');
+        if (!cell.isBlack()) {
+          answer += fill;
+        }
+        if (answer && (x === this.state.width - 1 || cell.isBlack())) {
+          across.push(answer);
+          answer = '';
+        }
+      }
+    }
+    for (let x = 0; x < this.state.width; x++) {
+      for (let y = 0; y < this.state.height; y++) {
+        var i = this.state.width * y + x;
+        var cell = this.state.cells[i];
+        var fill = cell.get('entry');
+        if (!cell.isBlack()) {
+          answer += fill;
+        }
+        if (answer && (y === this.state.height - 1 || cell.isBlack())) {
+          down.push(answer);
+          answer = '';
+        }
+      }
+    }
+    return [across, down];
+  }
+  updateClues() {
+    var clues = [];
+    var [across, down] = this.getAnswers()
+    console.log("across: " + JSON.stringify(across));
+    console.log("down: " + JSON.stringify(down));
+    for (var i = 0; i < across.length; i++) {
+      var clue = new XwordClue({
+        'index': i, 'direction': 'A', 'number': i, 'clue': "???",
+        'answer': across[i]});
+      clues.push(clue);
+    }
+    for (var i = 0; i < down.length; i++) {
+      var clue = new XwordClue({
+        'index': i, 'direction': 'D', 'number': i, 'clue': "???",
+        'answer': down[i]});
+      clues.push(clue);
+    }
+    this.setState({clues: clues});
   }
   clearHinted() {
     for (var i=0; i < this.state.cells.length; i++) {
@@ -752,6 +777,7 @@ class XwordSolver extends Component {
     newstack.push(new Mutation(mutation.start_cell, mutation.direction, orig_str));
     this.setState({'cells': this.state.cells.slice()});
     this.state.filler.updateGrid(this.getFillerString());
+    this.updateClues();
     this.updateFills(this.state.activecell, this.state.direction);
   }
   undo() {
@@ -778,6 +804,7 @@ class XwordSolver extends Component {
     this.setState({cells: this.state.cells.slice()});
     this.saveStoredData();
     this.updateFills(i, dir);
+    this.updateClues();
   }
   handleClick(i: number) {
     if (this.state.activecell === i) {
@@ -1029,6 +1056,7 @@ class XwordSolver extends Component {
 
     this.setState({'cells': newcells, 'activecell': cell_id, 'direction': direction});
     this.updateFills(cell_id, direction);
+    this.updateClues();
   }
   closeModal() {
     this.setState({'dismissed_modal': true});
@@ -1094,6 +1122,9 @@ class XwordSolver extends Component {
         </div>
       );
     }
+    if (this.state.clues.length === 0) {
+      this.updateClues();
+    }
     return (
       <div className="XwordMain">
         <XwordNav
@@ -1109,23 +1140,45 @@ class XwordSolver extends Component {
           <div className="xwordjs-topbar">
             <Title title={this.state.title} author={this.state.author}/>
           </div>
-          <div className="xwordjs-container">
-            <div className="xwordjs-grid">
-              <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
-            </div>
-            <FillList value={this.state.fills} fillEntry={(x) => this.fillEntry(x)}/>
-            <Stats height={this.state.height} width={this.state.width} cells={this.state.cells}/>
-          </div>
-          <div>
-            <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(this.state.cellLetters.entries()).map((x) => [x[0].toUpperCase(), x[1]])}/>
-            Estimated fills: {this.state.numFills}
-          </div>
+          <Switch>
+            <Route path={this.props.match.url + "/clues"} render={props =>
+              <ClueEditor {...props}
+                clues={this.state.clues} />}/>
+            <Route render={props =>
+              <GridEditor {...props}
+                height={this.state.height} width={this.state.width}
+                cells={this.state.cells}
+                handleClick={(x) => this.handleClick(x)}
+                fills={this.state.fills}
+                numFills={this.state.numFills}
+                cellLetters={this.state.cellLetters}
+                fillEntry={(x) => this.fillEntry(x)} />}/>
+          </Switch>
           <MobileKeyboard onClick={(code) => this.processKeyCode(code, false, false)}/>
         </div>
       </div>
     );
   }
 }
+
+const GridEditor = (props) => {
+  return (
+    <div>
+    <div className="xwordjs-container">
+      <div className="xwordjs-grid">
+        <Grid height={props.height} width={props.width} cells={props.cells} handleClick={props.handleClick}/>
+      </div>
+      <FillList value={props.fills} fillEntry={(x) => props.fillEntry(x)}/>
+      <Stats height={props.height} width={props.width} cells={props.cells}/>
+    </div>
+    <div>
+      <Histogram keys={"ABCDEFGHIJKLMNOPQRSTUVWXYZ"} samples={Array.from(props.cellLetters.entries()).map((x) => [x[0].toUpperCase(), x[1]])}/>
+      Estimated fills: {props.numFills}
+    </div>
+    </div>
+  );
+}
+
 
 function XwordLoad(props) {
   return (
