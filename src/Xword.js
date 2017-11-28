@@ -439,20 +439,36 @@ class XwordSolver extends Component {
     return [across, down];
   }
   updateClues() {
+    var answer_to_clue = {};
+    for (var i = 0; i < this.state.clues.length; i++) {
+      console.log(this.state.clues[i].get('answer') + " -> " + this.state.clues[i]);
+      answer_to_clue[this.state.clues[i].get('answer')] = this.state.clues[i];
+    }
+
     var clues = [];
     var [across, down] = this.getAnswers()
     console.log("across: " + JSON.stringify(across));
     console.log("down: " + JSON.stringify(down));
     for (var i = 0; i < across.length; i++) {
-      var clue = new XwordClue({
-        'index': i, 'direction': 'A', 'number': i, 'clue': "???",
-        'answer': across[i]});
+      var clue;
+      if (answer_to_clue[across[i]]) {
+        clue = answer_to_clue[across[i]];
+      } else {
+        clue = new XwordClue({
+          'index': i, 'direction': 'A', 'number': i, 'clue': "",
+          'answer': across[i]});
+      }
       clues.push(clue);
     }
     for (var i = 0; i < down.length; i++) {
-      var clue = new XwordClue({
-        'index': i, 'direction': 'D', 'number': i, 'clue': "???",
-        'answer': down[i]});
+      var clue;
+      if (answer_to_clue[down[i]]) {
+        clue = answer_to_clue[down[i]];
+      } else {
+        clue = new XwordClue({
+          'index': i, 'direction': 'D', 'number': i, 'clue': "",
+          'answer': down[i]});
+      }
       clues.push(clue);
     }
     this.setState({clues: clues});
@@ -496,28 +512,9 @@ class XwordSolver extends Component {
     if (!data)
       throw "puzzle not found";
 
-    data = JSON.parse(data);
-    var maxx = data.width;
-    var maxy = data.height;
-    var cells = new Array(maxx * maxy);
-    for (var i=0; i < maxx * maxy; i++) {
-      cells[i] = new XwordCell();
-      cells[i].setState(data.cells[i]);
-    }
-
     var wordlist = this.loadWordlist("default");
-    this.setState({
-      puzzleId: id,
-      title: data.title,
-      author: data.author,
-      height: data.height,
-      width: data.width,
-      cells: cells,
-      wordlist: wordlist,
-      filler: new Filler.filler('', new Filler.wordlist(wordlist)),
-      construct: true,
-    });
-    this.state.filler.updateGrid(this.getFillerString());
+    this.setState({wordlist: wordlist});
+    this.loadStoredData(id);
   }
   loadPuzzleURL(url: string, filename : ?string) {
     var self = this;
@@ -738,22 +735,28 @@ class XwordSolver extends Component {
     }
   }
   handleKeyDown(e: KeyboardEvent) {
+    // $FlowFixMe
+    if (['INPUT', 'SELECT', 'TEXTAREA'].indexOf(e.target.tagName) !== -1)
+      return false;
+
     if (e.altKey)
-      return;
+      return false;
 
     if (this.state.direction === 'A' && (e.keyCode === 0x26 || e.keyCode === 0x28)) {
       this.selectCell(this.state.activecell, 'D');
       e.preventDefault();
-      return;
+      return true;
     }
     if (this.state.direction === 'D' && (e.keyCode === 0x25 || e.keyCode === 0x27)) {
       this.selectCell(this.state.activecell, 'A');
       e.preventDefault();
-      return;
+      return true;
     }
     if (this.processKeyCode(e.keyCode, e.shiftKey, e.ctrlKey)) {
       e.preventDefault();
+      return true;
     }
+    return false;
   }
   undoOrRedo(oldstack, newstack) {
     var mutation;
@@ -964,34 +967,57 @@ class XwordSolver extends Component {
           hinted: x.state.hinted,
         }
       }),
+      clues: this.state.clues.map(function(x) {
+        return {
+          clue: x.state.clue,
+          answer: x.state.answer,
+        }
+      }),
     };
     localStorage.setItem(key, JSON.stringify(data));
-
     // update filler state
     var grid = this.getFillerString();
     var filler = this.state.filler;
     filler.updateGrid(grid);
   }
-  readStoredData()
+  readStoredData(id)
   {
-    var key = "construct_" + this.state.puzzleId;
+    var key = "construct_" + id;
     var data = localStorage.getItem(key);
     if (!data)
       return null;
 
     return JSON.parse(data);
   }
-  loadStoredData()
+  loadStoredData(id)
   {
-    var data = this.readStoredData()
+    var data = this.readStoredData(id)
     if (!data)
       return;
 
-    for (var i=0; i < data.cells.length; i++) {
-      this.state.cells[i].setState(data.cells[i]);
+    var maxx = data.width;
+    var maxy = data.height;
+    var cells = new Array(maxx * maxy);
+    for (var i=0; i < maxx * maxy; i++) {
+      cells[i] = new XwordCell();
+      cells[i].setState(data.cells[i]);
     }
-    this.setState({modified: true})
-    this.setState({cells: this.state.cells});
+
+    var clues = [];
+    for (i=0; i < data.clues.length; i++) {
+      clues.push(new XwordClue(data.clues[i]));
+    }
+
+    this.setState({
+      puzzleId: id,
+      title: data.title,
+      author: data.author,
+      height: data.height,
+      width: data.width,
+      cells: cells,
+      clues: clues,
+      filler: new Filler.filler('', new Filler.wordlist(this.state.wordlist)),
+    });
     this.state.filler.updateGrid(this.getFillerString());
   }
   rewindToStart(x: number, y: number, direction: number)
@@ -1143,7 +1169,14 @@ class XwordSolver extends Component {
           <Switch>
             <Route path={this.props.match.url + "/clues"} render={props =>
               <ClueEditor {...props}
-                clues={this.state.clues} />}/>
+                clues={this.state.clues}
+                onChange={(i, val) => {
+                  this.state.clues[i].setState({clue: val});
+                  this.setState({ clues: this.state.clues.slice() });
+                  this.saveStoredData();
+                }}
+              />
+            }/>
             <Route render={props =>
               <GridEditor {...props}
                 height={this.state.height} width={this.state.width}

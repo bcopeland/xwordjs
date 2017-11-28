@@ -8,7 +8,10 @@ const ClueEditor = (props) => {
       <FormGroup key={"clue" + i}>
         <Col componentClass={ControlLabel} sm={2}>{props.clues[i].get('answer')}</Col>
         <Col sm={10}>
-          <FormControl type="text" defaultValue={props.clues[i].get('clue')}/>
+          <FormControl type="text"
+            placeholder="Enter clue"
+            defaultValue={props.clues[i].get('clue')}
+            onBlur={(x) => props.onChange(i, x.target.value)} />
         </Col>
       </FormGroup>
     );
