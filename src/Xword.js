@@ -717,6 +717,9 @@ class XwordSolver extends Component {
       case 0x47:
         this.fill();
         return true;
+      case 0x48:
+        this.clearHinted();
+        return true;
       }
     }
 
