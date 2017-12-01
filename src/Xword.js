@@ -408,18 +408,39 @@ class XwordSolver extends Component {
     var across = [];
     var down = [];
     let answer = '';
+    var number_grid = Array(this.state.height * this.state.width);
+    var number = 0;
+    var maxx = this.state.width;
+    var maxy = this.state.height;
+    var start_i = 0;
+    
     for (let y = 0; y < this.state.height; y++) {
       for (let x = 0; x < this.state.width; x++) {
         var i = this.state.width * y + x;
         var cell = this.state.cells[i];
+        var is_black = cell.isBlack();
+
         var fill = cell.get('entry');
-        if (!cell.isBlack()) {
+        if (!is_black) {
           answer += fill;
         }
-        if (answer && (x === this.state.width - 1 || cell.isBlack())) {
-          across.push(answer);
+        if (answer && (x === this.state.width - 1 || is_black)) {
+          across.push({'answer': answer, 'number': number_grid[start_i]});
           answer = '';
         }
+
+        var start_of_xslot = (!is_black &&
+                              (x === 0 || this.cellAt(y, x-1).isBlack()) &&
+                              (x + 1 < maxx && !this.cellAt(y, x+1).isBlack()));
+        var start_of_yslot = (!is_black &&
+                              (y === 0 || this.cellAt(y-1, x).isBlack()) &&
+                              (y + 1 < maxy && !this.cellAt(y+1, x).isBlack()));
+
+        if (start_of_xslot || start_of_yslot) {
+          number += 1;
+          start_i = i;
+        }
+        number_grid[i] = number;
       }
     }
     for (let x = 0; x < this.state.width; x++) {
@@ -428,10 +449,12 @@ class XwordSolver extends Component {
         var cell = this.state.cells[i];
         var fill = cell.get('entry');
         if (!cell.isBlack()) {
+          if (!answer) 
+            start_i = i;
           answer += fill;
         }
         if (answer && (y === this.state.height - 1 || cell.isBlack())) {
-          down.push(answer);
+          down.push({answer: answer, number: number_grid[start_i]});
           answer = '';
         }
       }
@@ -441,7 +464,6 @@ class XwordSolver extends Component {
   updateClues() {
     var answer_to_clue = {};
     for (var i = 0; i < this.state.clues.length; i++) {
-      console.log(this.state.clues[i].get('answer') + " -> " + this.state.clues[i]);
       answer_to_clue[this.state.clues[i].get('answer')] = this.state.clues[i];
     }
 
@@ -451,23 +473,23 @@ class XwordSolver extends Component {
     console.log("down: " + JSON.stringify(down));
     for (var i = 0; i < across.length; i++) {
       var clue;
-      if (answer_to_clue[across[i]]) {
-        clue = answer_to_clue[across[i]];
+      if (answer_to_clue[across[i].answer]) {
+        clue = answer_to_clue[across[i].answer];
       } else {
         clue = new XwordClue({
-          'index': i, 'direction': 'A', 'number': i, 'clue': "",
-          'answer': across[i]});
+          'index': i, 'direction': 'A', 'number': across[i].number, 'clue': "",
+          'answer': across[i].answer});
       }
       clues.push(clue);
     }
     for (var i = 0; i < down.length; i++) {
       var clue;
-      if (answer_to_clue[down[i]]) {
-        clue = answer_to_clue[down[i]];
+      if (answer_to_clue[down[i].answer]) {
+        clue = answer_to_clue[down[i].answer];
       } else {
         clue = new XwordClue({
-          'index': i, 'direction': 'D', 'number': i, 'clue': "",
-          'answer': down[i]});
+          'index': i, 'direction': 'D', 'number': down[i].number, 'clue': "",
+          'answer': down[i].answer});
       }
       clues.push(clue);
     }
@@ -558,6 +580,12 @@ class XwordSolver extends Component {
     xpf.headers.push(['Title', this.state.title]);
     xpf.headers.push(['Author', this.state.author]);
     xpf.grid = this.getFillerString().split("\n");
+
+    for (var i = 0; i < this.state.clues.length; i++) {
+      var clue = this.state.clues[i];
+      xpf.clues.push([[ clue.get('direction'), clue.get('number') ],
+        clue.get('clue'), clue.get('answer'), 1, 1]);
+    }
 
     var blob = new Blob([xpf.format()], {type: "text/xml; charset=utf-8"});
     saveAs(blob, this.state.title.replace(/ /g, "_") + ".xml");

@@ -64,7 +64,7 @@ function Xpf() {
           var direction = clue.getAttribute("Dir").charAt(0);
           var number = parseInt(clue.getAttribute("Num"), 10);
           var answer = clue.getAttribute("Ans");
-          this.clues.push([[direction, number], text, answer]);
+          this.clues.push([[direction, number], text, answer, row, col]);
         }
         break;
       case "Circles":
@@ -113,7 +113,25 @@ function Xpf() {
     }
     puzzle.appendChild(grid);
 
-    // TODO clues
+    var clues = doc.createElement("Clues");
+    for (var i = 0; i < this.clues.length; i++) {
+      var clue = this.clues[i];
+      var [direction, number] = clue[0];
+      var text = clue[1];
+      var answer = clue[2];
+      var row = clue[3];
+      var col = clue[4];
+
+      var elem = doc.createElement("Clue");
+      elem.appendChild(doc.createTextNode(text));
+      elem.setAttribute("Dir", direction === 'A' ? "Across" : "Down");
+      elem.setAttribute("Ans", answer);
+      elem.setAttribute("Num", number);
+      elem.setAttribute("Row", row);
+      elem.setAttribute("Col", col);
+      clues.appendChild(elem);
+    }
+    puzzle.appendChild(clues);
 
     root.appendChild(puzzle);
     doc.appendChild(root);
