@@ -366,6 +366,34 @@ class XwordSolver extends Component {
     var next_clue_id = (clue_id - 1) % this.state.clues.length;
     this.selectClue(this.state.clues[next_clue_id]);
   }
+  findNextEmptyCell(direction: string,
+                    start_x: number, start_y: number,
+                    end_x: ?number, end_y: ?number): ?number {
+    var dind = (direction === 'A') ? 0 : 1;
+    var [x_incr, y_incr] = [1 - dind, dind];
+    var [x, y] = [start_x, start_y];
+
+    if (end_x === null || end_x === undefined)
+      end_x = this.state.width;
+    if (end_y === null || end_y === undefined)
+      end_y = this.state.height;
+
+    var len = (!dind) ? end_x - start_x : end_y - start_y;
+    for (let i = 0; i < len; i++) {
+      var cell_id = y * this.state.width + x;
+      var cell = this.state.cells[cell_id];
+
+      if (cell.isBlack())
+        break;
+
+      if (cell.get('entry') === ' ')
+        return cell_id;
+
+      x += x_incr;
+      y += y_incr;
+    }
+    return null;
+  }
   navNext() {
     var dind = (this.state.direction === 'A') ? 0 : 1;
     var cur_cell_id = this.state.activecell;
@@ -377,21 +405,13 @@ class XwordSolver extends Component {
     var [start_x, start_y] = this.cellPos(start_cell_id);
     var alen = clue.get('answer').length;
 
-    for (var i = 0; i < alen; i++) {
-      if (this.state.direction === 'A')
-        x += 1;
-      else
-        y += 1;
-      if (x >= start_x + alen)
-        x = start_x;
-      if (y >= start_y + alen)
-        y = start_y;
-
-      var cell = this.state.cells[y * this.state.width + x];
-      if (cell.get('entry') === ' ')
-        break;
+    var empty_cell_id = this.findNextEmptyCell(this.state.direction, x, y);
+    // wrap
+    if (empty_cell_id === null || empty_cell_id === undefined) {
+      empty_cell_id = this.findNextEmptyCell(this.state.direction,
+                                             start_x, start_y, x, y);
     }
-    if (i === alen) {
+    if (empty_cell_id === null || empty_cell_id === undefined) {
       // no empty square.
       [x, y] = this.cellPos(cur_cell_id);
 
@@ -402,13 +422,15 @@ class XwordSolver extends Component {
         return;
       }
 
+      // go to next word
       if (this.state.direction === 'A')
         x += 1;
       else
         y += 1;
+
+      empty_cell_id = y * this.state.width + x;
     }
-    var activecell = y * this.state.width + x;
-    this.selectCell(activecell, this.state.direction);
+    this.selectCell(empty_cell_id, this.state.direction);
   }
   navPrev() {
     var dind = (this.state.direction === 'A') ? 0 : 1;
@@ -816,8 +838,14 @@ class XwordSolver extends Component {
   {
     var cluenum = clue.get('index');
 
-    // set first cell in this clue as active
+    // set first empty cell in this clue as active
     var cell = this.state.clue_to_cell_table[cluenum];
+    var [start_x, start_y] = this.cellPos(cell);
+    var empty_cell = this.findNextEmptyCell(clue.get('direction'),
+        start_x, start_y);
+    if (empty_cell != null)
+      cell = empty_cell;
+
     this.selectCell(cell, clue.get('direction'));
   }
   closeModal() {
