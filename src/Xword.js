@@ -12,7 +12,6 @@ import scrollIntoViewIfNeeded from 'scroll-into-view-if-needed';
 import './Xword.css';
 
 // TODO
-// . restyle secondary clue
 // . clue-only entry
 // . auto-pause
 // . port nav enhancements (no auto next, skip to first blank)
