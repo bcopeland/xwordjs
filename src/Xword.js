@@ -656,7 +656,7 @@ class XwordSolver extends Component {
       [x, y] = xy;
       for (var j = 0; y < maxy && x < maxx; j++) {
         var cell = y * maxx + x;
-        if (grid[cell] === '#')
+        if (grid[y][x] === '#')
           break;
         cell_to_clue_table[cell][ind] = i;
         x += xincr; y += yincr;
