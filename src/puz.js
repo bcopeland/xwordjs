@@ -1,6 +1,7 @@
 /*
  * Parse .puz crossword files.
  */
+import { TextDecoder } from 'text-encoding';
 function Puz(data) {
   this.FLAGS = {
     INCORRECT_ONCE: 0x10,

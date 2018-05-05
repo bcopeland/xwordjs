@@ -10,6 +10,7 @@ import {TimerState, Timer} from './Timer.js';
 import { Route, Switch, Link } from 'react-router-dom';
 import { ButtonGroup, ButtonToolbar, DropdownButton, MenuItem, ProgressBar, Button } from 'react-bootstrap';
 import scrollIntoViewIfNeeded from 'scroll-into-view-if-needed';
+import { TextDecoder } from 'text-encoding';
 import './Xword.css';
 
 // TODO

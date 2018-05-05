@@ -1,6 +1,7 @@
 /*
  * Parse .xpf crossword files.
  */
+import { TextDecoder } from 'text-encoding';
 function Xpf(data) {
   this.FLAGS = {
     INCORRECT_ONCE: 0x10,
