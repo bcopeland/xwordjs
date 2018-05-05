@@ -859,6 +859,8 @@ class XwordSolver extends Component {
         if (cell.get('entry') !== ' ' &&
             cell.get('entry') !== cell.get('fill')) {
           cell.setState({incorrect: true});
+        } else {
+          cell.setState({incorrect: false});
         }
       }
     }
