@@ -5,6 +5,7 @@ import FileInput from './FileInput.js';
 import Server from './Server.js';
 import Cell from './Cell.js';
 import Clues from './Clues.js';
+import Loading from './Loading.js';
 import {TimerState, Timer} from './Timer.js';
 import { Route, Switch, Link } from 'react-router-dom';
 import { ButtonGroup, ButtonToolbar, DropdownButton, MenuItem, ProgressBar, Button } from 'react-bootstrap';
@@ -949,7 +950,7 @@ class XwordSolver extends Component {
   render() {
     if (this.state.cells.length === 0) {
       if (this.props.filename || this.props.serverId) {
-        return (<span>{"Loading..."}</span>);
+        return <Loading/>;
       }
       if (process.env.REACT_APP_HAS_SERVER) {
          return (
@@ -1070,7 +1071,7 @@ class XwordPuzzleListLoader extends Component
   }
   render() {
     if (!this.state.items) {
-      return <b>Loading...</b>;
+      return <Loading/>;
     }
     return <XwordPuzzleList puzzles={this.state.items}/>;
   }
