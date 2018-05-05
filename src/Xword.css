@@ -43,6 +43,7 @@
   width: 4vh;
   height: 4vh;
   user-select: none;
+  overflow: hidden;
 }
 
 .xwordjs-cell-circled {
