@@ -11,7 +11,7 @@
     "react-dom": "^15.4.2",
     "react-modal": "^1.7.3",
     "react-router-dom": "^4.1.2",
-    "scroll-into-view-if-needed": "^1.1.0"
+    "scroll-into-view-if-needed": "^1.4.0"
   },
   "scripts": {
     "start": "react-scripts start",
