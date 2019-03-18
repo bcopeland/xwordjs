@@ -766,13 +766,17 @@ class XwordSolver extends Component {
 
     var e;
 
+    var cluediv = document.getElementById("xwordjs-cluelist-container");
+    var display = window.getComputedStyle(cluediv).getPropertyValue("display");
+    var hasClues = display !== "none";
+
     if (initial || oldcross !== cross) {
       if (oldcross)
         oldcross.setState({"crossActive": false});
       if (cross) {
         cross.setState({"crossActive": true});
         e = document.getElementById("clue_" + cross.get('index'));
-        if (e)
+        if (e && hasClues)
           scrollIntoViewIfNeeded(e);
       }
     }
@@ -787,7 +791,7 @@ class XwordSolver extends Component {
         clue.setState({"active": true});
         this.highlightClue(clue, true);
         e = document.getElementById("clue_" + clue.get('index'));
-        if (e)
+        if (e && hasClues)
           scrollIntoViewIfNeeded(e);
       }
     }
@@ -797,8 +801,23 @@ class XwordSolver extends Component {
       cell.setState({focus: true});
     }
     e = document.getElementById("cell_" + cell_id);
-    if (e)
-      scrollIntoViewIfNeeded(e);
+    if (e) {
+      var rect = e.getBoundingClientRect();
+      var pelem = e.parentElement;
+      var needsScroll = false;
+
+      while (pelem) {
+        var prect = pelem.getBoundingClientRect();
+        if (prect.left > rect.left || prect.right < rect.right ||
+            prect.top > rect.top || prect.bottom < rect.bottom) {
+          needsScroll = true;
+          break;
+        }
+        pelem = pelem.parentElement;
+      }
+      if (needsScroll)
+        scrollIntoViewIfNeeded(e);
+    }
 
     this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction, rebus: false});
   }
