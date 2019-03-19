@@ -803,20 +803,12 @@ class XwordSolver extends Component {
     e = document.getElementById("cell_" + cell_id);
     if (e) {
       var rect = e.getBoundingClientRect();
-      var pelem = e.parentElement;
-      var needsScroll = false;
-
-      while (pelem) {
-        var prect = pelem.getBoundingClientRect();
-        if (prect.left > rect.left || prect.right < rect.right ||
-            prect.top > rect.top || prect.bottom < rect.bottom) {
-          needsScroll = true;
-          break;
-        }
-        pelem = pelem.parentElement;
-      }
-      if (needsScroll)
+      var container = document.getElementById("xwordjs-container");
+      var prect = container.getBoundingClientRect();
+      if (prect.left > rect.left || prect.right < rect.right ||
+          prect.top > rect.top || prect.bottom < rect.bottom) {
         scrollIntoViewIfNeeded(e);
+      }
     }
 
     this.setState({'clues': newclues, 'cells': newcells, 'activecell': cell_id, 'direction': direction, rebus: false});
@@ -1033,8 +1025,8 @@ class XwordSolver extends Component {
             <Button onClick={() => this.setState({rebus: !this.state.rebus})} active={this.state.rebus} bsSize="xsmall">Rebus</Button>
           </div>
           <ClueBar value={this.state.clues}/>
-          <div className="xwordjs-container">
-            <div className="xwordjs-grid">
+          <div className="xwordjs-container" id="xwordjs-container">
+            <div className="xwordjs-grid" id="xwordjs-grid">
               <Grid height={this.state.height} width={this.state.width} cells={this.state.cells} handleClick={(x) => this.handleClick(x)}/>
             </div>
             <Clues selectClue={(i) => this.selectClue(i)} value={this.state.clues}/>
