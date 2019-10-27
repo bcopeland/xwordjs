@@ -180,7 +180,7 @@ function MobileKeyboardKey(props) {
 }
 
 function MobileKeyboard(props) {
-  var keys = ["qwertyuiop", "asdfghjkl", "␣zxcvbnm⌫"];
+  var keys = ["qwertyuiop", "asdfghjkl", ".zxcvbnm⌫"];
   var rows = [];
   for (var i=0; i < keys.length; i++) {
     var rowstr = keys[i];
@@ -188,8 +188,8 @@ function MobileKeyboard(props) {
     for (var j=0; j < rowstr.length; j++) {
       var ch = rowstr.charAt(j);
       var code;
-      if (ch === '␣') {
-        code = 0x20;
+      if (ch === '.') {
+        code = 0xbe;
       } else if (ch === '⌫') {
         code = 0x8;
       } else {
