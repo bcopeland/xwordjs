@@ -381,7 +381,6 @@ class XwordSolver extends Component {
     var result = filler.getFills(x, y, dir);
     var num_fills = filler.estimatedFills();
     var cell_letters = filler.getCellLetters(x, y);
-
     for (var i=0; i < this.state.height; i++) {
         for (var j = 0; j < this.state.width; j++) {
           var cell_id = this.state.height * i + j;
@@ -413,7 +412,7 @@ class XwordSolver extends Component {
     var maxx = this.state.width;
     var maxy = this.state.height;
     var start_i = 0;
-    
+
     for (let y = 0; y < this.state.height; y++) {
       for (let x = 0; x < this.state.width; x++) {
         var i = this.state.width * y + x;
@@ -449,7 +448,7 @@ class XwordSolver extends Component {
         var cell = this.state.cells[i];
         var fill = cell.get('entry');
         if (!cell.isBlack()) {
-          if (!answer) 
+          if (!answer)
             start_i = i;
           answer += fill;
         }
@@ -562,9 +561,9 @@ class XwordSolver extends Component {
       }
     });
   }
-  cellPos(clue_id: number) {
-    var y = Math.floor(clue_id / this.state.width);
-    var x = clue_id % this.state.width;
+  cellPos(cell_id: number) {
+    var y = Math.floor(cell_id / this.state.width);
+    var x = cell_id % this.state.width;
     return [x, y];
   }
   cellId(x: number, y: number) : number {
@@ -583,8 +582,11 @@ class XwordSolver extends Component {
 
     for (var i = 0; i < this.state.clues.length; i++) {
       var clue = this.state.clues[i];
+      var cell_id = this.state.clue_to_cell_table[i];
+      var xy = this.cellPos(cell_id);
+
       xpf.clues.push([[ clue.get('direction'), clue.get('number') ],
-        clue.get('clue'), clue.get('answer'), 1, 1]);
+        clue.get('clue'), clue.get('answer'), xy[0] + 1, xy[1] + 1]);
     }
 
     var blob = new Blob([xpf.format()], {type: "text/xml; charset=utf-8"});
@@ -907,10 +909,20 @@ class XwordSolver extends Component {
 
     var clues = [];
     var clue_to_cell_table = [];
+    var largest_index = {
+        "A": 0,
+        "D": 0
+    };
 
     for (i=0; i < puz.clues.length; i++) {
       var [type, cluestr, answer] = puz.clues[i];
       var [dir, num] = type;
+
+      // autonumber clues for some puzzles that don't have them
+      if (num == 0) {
+        num = ++largest_index[dir];
+      }
+
       var clue = new XwordClue({
         'index': i, 'direction': dir, 'number': num, 'clue': cluestr,
         'answer': answer});
@@ -919,7 +931,7 @@ class XwordSolver extends Component {
       // clue_to_cell table: index into clues[] has the corresponding
       // cell id
       var xy = number_index[num - 1];
-      clue_to_cell_table[i] = xy[1] * maxx + xy[0];
+      clue_to_cell_table.push(xy[1] * maxx + xy[0]);
 
       // set up cell_to_clue_table: indexed by cell id, each entry
       // has a two element array (across, down) which contains the
@@ -947,7 +959,9 @@ class XwordSolver extends Component {
     this.setState({
       puzzleId: puzzleId,
       title: title, author: author,
-      width: maxx, height: maxy, cells: cells
+      width: maxx, height: maxy, cells: cells,
+      clues: clues,
+      clue_to_cell_table: clue_to_cell_table
     });
     this.saveStoredData();
     this.props.history.replace("/puzzle/" + puzzleId);
