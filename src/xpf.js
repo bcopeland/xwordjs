@@ -137,6 +137,14 @@ function Xpf() {
     doc.appendChild(root);
     return new XMLSerializer().serializeToString(doc);
   }
+
+  this.getContentType = function() {
+    return "text/xml; charset=utf-8";
+  }
+
+  this.getExtension = function() {
+    return "xml";
+  }
 }
 if (typeof(module) !== "undefined") {
   module.exports = Xpf;

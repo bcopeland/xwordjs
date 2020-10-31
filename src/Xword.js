@@ -264,6 +264,8 @@ class XwordSolver extends Component {
     author: string,
     activecell: number,
     direction: string,
+    clue_to_cell_table: Array<number>,
+    cell_to_clue_table: Array<number>,
     construct: boolean,
     version: number,
     solutionId: ?string,
@@ -548,7 +550,7 @@ class XwordSolver extends Component {
       if (fn.endsWith("xd")) {
         var decoder = new TextDecoder('utf-8');
         // $FlowFixMe decode handles ArrayBuffer too
-        puz = new Xd(decoder.decode(data));
+        puz = new Xd().parse(decoder.decode(data));
         self.puzzleLoaded(puz);
       } else if (fn.endsWith("xml") || url.match(/^http/)) {
         var decoder = new TextDecoder('utf-8');
@@ -573,24 +575,24 @@ class XwordSolver extends Component {
     return this.state.cells[this.cellId(x, y)];
   }
   save() {
-    var xpf = new Xpf();
-    xpf.height = this.state.height;
-    xpf.width = this.state.width;
-    xpf.headers.push(['Title', this.state.title]);
-    xpf.headers.push(['Author', this.state.author]);
-    xpf.grid = this.getFillerString().split("\n");
+    var outf = new Xd();  // or new Xpf();
+    outf.height = this.state.height;
+    outf.width = this.state.width;
+    outf.headers.push(['Title', this.state.title]);
+    outf.headers.push(['Author', this.state.author]);
+    outf.grid = this.getFillerString().split("\n");
 
     for (var i = 0; i < this.state.clues.length; i++) {
       var clue = this.state.clues[i];
       var cell_id = this.state.clue_to_cell_table[i];
       var xy = this.cellPos(cell_id);
 
-      xpf.clues.push([[ clue.get('direction'), clue.get('number') ],
+      outf.clues.push([[ clue.get('direction'), clue.get('number') ],
         clue.get('clue'), clue.get('answer'), xy[0] + 1, xy[1] + 1]);
     }
 
-    var blob = new Blob([xpf.format()], {type: "text/xml; charset=utf-8"});
-    saveAs(blob, this.state.title.replace(/ /g, "_") + ".xml");
+    var blob = new Blob([outf.format()], {type: outf.getContentType()});
+    saveAs(blob, this.state.title.replace(/ /g, "_") + "." + outf.getExtension());
   }
   navRight() {
     var [x, y] = this.cellPos(this.state.activecell);

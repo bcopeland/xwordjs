@@ -9,7 +9,7 @@ function Xd(data) {
 
   this.headers = [];  // list of [header, value]
   this.grid = [];     // [y][x] 2-dim array
-  this.flags = [];     // [y][x] 2-dim array
+  this.flags = [];    // [y][x] 2-dim array
   this.clues = [];    // list of [[direction, num], clue, answer]
   this.notes = "";
   this.number_index = [];
@@ -20,7 +20,7 @@ function Xd(data) {
    * original python source by Saul Pwanson in order to ensure
    * compatibility.
    */
-  this.parseXd = function(xd_contents) {
+  this.parse = function(xd_contents) {
     // placeholders, actual numbering starts at 1
     var section = 0;
 
@@ -102,6 +102,7 @@ function Xd(data) {
       }
     }
     self.numberGrid();
+    return this;
   }
 
   /*
@@ -130,54 +131,35 @@ function Xd(data) {
     }
   }
 
-  /*
-   * Generate a "puzzle.js" format object, usable by Matt Wiseley's
-   * crossword.js.
-   */
-  this.toPuzzleJson = function() {
+  this.format = function() {
+    var output = [];
 
-    var title = "unknown";
-    var author = "unknown";
-
-    for (var i=0; i < self.headers.length; i++) {
-      var header = self.headers[i];
-      if (header[0] === "Title") {
-        title = header[1];
-      } else if (header[0] === "Author") {
-        author = header[1];
-      }
+    for (var i = 0; i < self.headers.length; i++) {
+      output.push(self.headers[i][0] + ": " +  self.headers[i][1]);
     }
-
-    var puzzle = {
-      "title": title,
-      "by": author
-    };
-
-    var clues = [];
-    for (i=0; i < self.clues.length; i++) {
+    output.push("");
+    output.push("");
+    for (var i = 0; i < self.grid.length; i++) {
+      output.push(self.grid[i]);
+    }
+    output.push("");
+    output.push("");
+    for (var i = 0; i < self.clues.length; i++) {
       var clue = self.clues[i];
-      var dir = clue[0][0];
-      var num = clue[0][1];
-      var clue_str = clue[1];
-      var ans_str = clue[2];
-
-      var xy = self.number_index[num-1];
-
-      clues.push({
-        "d": dir,
-        "n": num,
-        "x": xy[0],
-        "y": xy[1],
-        "c": clue_str,
-        "a": ans_str,
-      });
+      var dir_num = clue[0];
+      output.push(dir_num[0] + dir_num[1] + ". " + clue[1] + " ~ " + clue[2]);
     }
-    puzzle["clues"] = clues;
-    return puzzle;
+    return output.join("\n");
   }
 
-  // parse the passed-in data.
-  self.parseXd(data);
+  this.getContentType = function() {
+    return "text/plain; charset=utf-8";
+  }
+
+  this.getExtension = function() {
+    return "xd";
+  }
+
 }
 if (typeof(module) !== "undefined") {
   module.exports = Xd;
