@@ -2,12 +2,14 @@
  * Parse .puz crossword files.
  */
 import { TextDecoder } from 'text-encoding';
-function Puz(data) {
+function Puz(data, flags) {
   this.FLAGS = {
     INCORRECT_ONCE: 0x10,
     INCORRECT: 0x20,
     REVEALED: 0x40,
     CIRCLED: 0x80,
+    HIDDEN: 0x100,
+    SHADED: 0x200,
   };
 
   this.headers = [];  // list of [header, value]

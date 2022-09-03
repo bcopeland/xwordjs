@@ -3,11 +3,16 @@ import React from 'react';
 
 function Cell(props) {
   var classname="xwordjs-cell";
-  if (props.isBlack) {
+  if (props.isHidden) {
+    classname += " xwordjs-cell-hidden";
+  } else if (props.isBlack) {
     classname += " xwordjs-cell-black";
   }
   if (props.isTop) {
     classname += " xwordjs-cell-top";
+  }
+  if (props.isShaded) {
+    classname += " xwordjs-cell-shaded";
   }
   if (props.isLeft) {
     classname += " xwordjs-cell-left";
@@ -22,9 +27,9 @@ function Cell(props) {
       classname += "-incorrect";
   }
 
-  if (props.isIncorrect)
+  if (props.isIncorrect && !props.isHidden) {
     classname += " xwordjs-cell-incorrect";
-
+  }
   var circleclass = "";
   if (props.isCircled) {
     circleclass = "xwordjs-cell-circled";

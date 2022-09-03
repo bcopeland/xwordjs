@@ -4,7 +4,12 @@
 function Xd(data) {
 
   this.FLAGS = {
+    INCORRECT_ONCE: 0x10,
+    INCORRECT: 0x20,
+    REVEALED: 0x40,
     CIRCLED: 0x80,
+    HIDDEN: 0x100,
+    SHADED: 0x200,
   };
 
   this.headers = [];  // list of [header, value]

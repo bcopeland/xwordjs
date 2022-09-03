@@ -59,7 +59,9 @@ class XwordCell {
     active: boolean,
     focus: boolean,
     circled: boolean,
+    shaded: boolean,
     incorrect: boolean,
+    hidden: boolean,
     number: number,
     version: number,
   };
@@ -71,6 +73,8 @@ class XwordCell {
       active: false,
       focus: false,
       circled: false,
+      hidden: false,
+      shaded: false,
       incorrect: false,
       version: 0,
       number: 0,
@@ -118,14 +122,31 @@ class Grid extends Component {
       var row_cells = [];
       for (var j=0; j < this.props.width; j++) {
         var ind = i * this.props.width + j;
-        var fill = this.props.cells[ind].get('fill');
-        var entry = this.props.cells[ind].get('entry');
-        var active = this.props.cells[ind].get('active');
-        var focus = this.props.cells[ind].get('focus');
-        var circled = this.props.cells[ind].get('circled');
-        var incorrect = this.props.cells[ind].get('incorrect');
-        var number = this.props.cells[ind].get('number') || '';
+        var cell = this.props.cells[ind];
+        var above;
+        if (i > 0) {
+          var aind = (i - 1) * this.props.width + j;
+          above = this.props.cells[aind];
+        }
+        var right;
+        if (j > 0) {
+          var rind = i * this.props.width + (j - 1);
+          right = this.props.cells[rind];
+        }
+
+        var fill = cell.get('fill');
+        var entry = cell.get('entry');
+        var active = cell.get('active');
+        var focus = cell.get('focus');
+        var circled = cell.get('circled');
+        var shaded = cell.get('shaded');
+        var hidden = cell.get('hidden');
+        var incorrect = cell.get('incorrect');
+        var number = cell.get('number') || '';
         var black = fill === '#';
+
+        var isTop = i === 0 || (above && above.get('hidden'));
+        var isLeft = j === 0 || (right && right.get('hidden'));
 
         if (fill === '#' || fill === '.') {
           fill = ' ';
@@ -133,8 +154,10 @@ class Grid extends Component {
         var cell = <Cell id={"cell_" + ind} value={entry} key={"cell_" + ind}
          isBlack={black} isActive={active} isFocus={focus}
          isCircled={circled}
+         isHidden={hidden}
+         isShaded={shaded}
          isIncorrect={incorrect}
-         isTop={i===0} isLeft={j===0} number={number}
+         isTop={isTop} isLeft={isLeft} number={number}
          onClick={(x)=>this.props.handleClick(parseInt(x.substring(5), 10))}/>;
         row_cells.push(cell);
       }
@@ -615,15 +638,21 @@ class XwordSolver extends Component {
           number_index.push([x,y]);
           number = number_index.length;
         }
+        var shaded = false;
         var circled = false;
+        var hidden = false;
         if (flags) {
           circled = !!(flags[y][x] & puz.FLAGS.CIRCLED);
+          hidden = !!(flags[y][x] & puz.FLAGS.HIDDEN);
+          shaded = !!(flags[y][x] & puz.FLAGS.SHADED);
         }
         cells[y * maxx + x] = new XwordCell({
-          'fill': fill,
-          'number': number,
-          'active': false,
-          'circled': circled
+          fill: fill,
+          number: number,
+          active: false,
+          circled: circled,
+          shaded: shaded,
+          hidden: hidden,
         });
         cell_to_clue_table[y * maxx + x] = [null, null];
       }
