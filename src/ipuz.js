@@ -23,8 +23,6 @@ function Ipuz(data) {
   this.height = 0;
   this.BLOCK = "#";
 
-  var self = this;
-
   this.parseIpuz = function(json) {
 
     const ipuz = JSON.parse(json);
@@ -33,13 +31,18 @@ function Ipuz(data) {
     const width = parseInt(dimensions.width);
     const height = parseInt(dimensions.height);
 
-    self.width = width;
-    self.height = height;
+    this.width = width;
+    this.height = height;
 
     const puzzle = ipuz.puzzle;
     const solution = ipuz.solution;
     const acrossClues = ipuz.clues.Across;
     const downClues = ipuz.clues.Down;
+
+    this.headers = [
+        ['Author', ipuz.author],
+        ['Title', ipuz.title]
+    ];
 
     for (var i = 0; i < height; i++) {
         var flagsline = Array(width).fill(0);
@@ -55,29 +58,29 @@ function Ipuz(data) {
             }
 
             if (puzzleRow[j] == null) {
-                flagsline[j] |= self.FLAGS.HIDDEN;
+                flagsline[j] |= this.FLAGS.HIDDEN;
             }
             if (puzzleRow[j].hasOwnProperty('style')) {
                 if (puzzleRow[j]['style'].get('shapebg') === 'circle') {
-                    flagsline[j] |= self.FLAGS.CIRCLED;
+                    flagsline[j] |= this.FLAGS.CIRCLED;
                 }
             }
             const cell = parseInt(puzzleRow[j].cell || puzzleRow[j]);
             if (cell > 0) {
-                self.number_index[cell] = [j, i];
+                this.number_index[cell] = [j, i];
             }
         }
 
-        self.grid.push(gridline);
-        self.flags.push(flagsline);
+        this.grid.push(gridline);
+        this.flags.push(flagsline);
     }
 
     for (var i = 0; i < acrossClues.length; i++) {
-        self.addClue('A', acrossClues[i]);
+        this.addClue('A', acrossClues[i]);
     }
 
     for (var i = 0; i < downClues.length; i++) {
-        self.addClue('D', downClues[i]);
+        this.addClue('D', downClues[i]);
     }
   }
 
@@ -93,9 +96,9 @@ function Ipuz(data) {
         clue = numClue[1];
     }
 
-    const xy = self.number_index[num];
-    self.clues.push([[direction, num], clue,
-                    self.getAnswer(direction, xy[0], xy[1])]);
+    const xy = this.number_index[num];
+    this.clues.push([[direction, num], clue,
+                    this.getAnswer(direction, xy[0], xy[1])]);
   }
 
   this.getAnswer = function(direction, x, y) {
@@ -103,17 +106,17 @@ function Ipuz(data) {
     var yinc = direction === 'D' ? 1 : 0;
 
     var str = '';
-    while (y < self.height && x < self.width &&
-           self.grid[y][x] !== this.BLOCK &&
-           !(self.flags[y][x] & self.FLAGS.HIDDEN)) {
-      str += self.grid[y][x];
+    while (y < this.height && x < this.width &&
+           this.grid[y][x] !== this.BLOCK &&
+           !(this.flags[y][x] & this.FLAGS.HIDDEN)) {
+      str += this.grid[y][x];
       y += yinc;
       x += xinc;
     }
     return str;
   }
 
-  self.parseIpuz(data);
+  this.parseIpuz(data);
 }
 
 if (typeof(module) !== "undefined") {
