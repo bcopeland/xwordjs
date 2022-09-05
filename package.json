@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-15": "^1.4.3",
     "react-scripts": "0.8.4"
   },
   "dependencies": {
