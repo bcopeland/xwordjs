@@ -76,8 +76,5 @@ it('renders smaller font when rebus', () => {
   const normalSize = fontSize(normalCell);
   const rebusSize = fontSize(rebusCell);
 
-  console.debug("normal " + normalSize);
-  console.debug("rebus " + rebusSize);
-
   expect(rebusSize).toBeLessThan(normalSize);
 });
