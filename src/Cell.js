@@ -43,7 +43,7 @@ function Cell(props) {
   return <div className={classname} id={props.id} onClick={() => props.onClick(props.id)}>
             <div className={circleclass}>
               <div className="xwordjs-cell-number">{props.number}</div>
-              <div className="xwordjs-cell-text" style={{"font-size": fontsize + "px"}}>{props.value}</div>
+              <div className="xwordjs-cell-text" style={{"fontSize": fontsize + "px"}}>{props.value}</div>
             </div>
           </div>;
 }
