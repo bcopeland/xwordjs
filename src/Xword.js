@@ -21,6 +21,7 @@ import './Xword.css';
 var Xd = require("./xd.js");
 var Puz = require("./puz.js");
 var Xpf = require("./xpf.js");
+var Ipuz = require("./ipuz.js");
 
 class XwordClue {
   state: {
@@ -281,6 +282,11 @@ class XwordSolver extends Component {
         decoder = new TextDecoder('utf-8');
         // $FlowFixMe
         puz = new Xpf(decoder.decode(data));
+        self.puzzleLoaded(url, puz);
+      } else if (fn.endsWith("ipuz")) {
+        decoder = new TextDecoder('utf-8');
+        // $FlowFixMe
+        puz = new Ipuz(decoder.decode(data));
         self.puzzleLoaded(url, puz);
       } else {
         puz = new Puz(data);
