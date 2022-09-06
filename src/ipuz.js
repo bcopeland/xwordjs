@@ -61,7 +61,7 @@ function Ipuz(data) {
                 flagsline[j] |= this.FLAGS.HIDDEN;
             }
             if (puzzleRow[j].hasOwnProperty('style')) {
-                if (puzzleRow[j]['style'].get('shapebg') === 'circle') {
+                if (puzzleRow[j].style.shapebg === 'circle') {
                     flagsline[j] |= this.FLAGS.CIRCLED;
                 }
             }
